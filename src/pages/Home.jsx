@@ -25,7 +25,7 @@ export default function Home() {
       {/* Hero */}
       <header className={styles.hero}>
         <div className={styles.logoWrap}>
-          <img src="/logo.png" alt="Studio La Milie" className={styles.logo} />
+          <img src="/logo.jpg" alt="Studio La Milie" className={styles.logo} />
         </div>
         <h1 className={styles.title + ' grad-text'}>{t.home_title}</h1>
         <p className={styles.sub}>{t.home_sub}</p>
