@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
@@ -22,227 +22,252 @@
     .arrow{flex-shrink:0;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,transform .1s;-webkit-tap-highlight-color:transparent;user-select:none}
     .arrow:active{background:rgba(255,255,255,.2);transform:scale(.9)}
 
-    /* ── stage ── */
+    /* ─────── stage ─────── */
+    /* White bg is essential: mix-blend-mode multiply removes white from images */
     .stage{
       position:relative;
-      background:#f0eef8; /* light so mix-blend-mode:multiply works */
+      background:#ffffff;
       border-radius:24px;
       overflow:hidden;
-      /* fills remaining width between the two arrows */
-      width:min(calc(100vw - 148px), 270px);
-      aspect-ratio:3/4;
-      box-shadow:0 0 0 2px rgba(91,179,224,.3), 0 8px 32px rgba(91,179,224,.12);
-      transition:box-shadow .2s;
-      cursor:grab;
+      flex:1;
+      aspect-ratio:0.55;
+      max-height:62vh;
+      min-height:320px;
+      max-width:260px;
+      width:100%;
     }
-    .stage.wrong{
-      box-shadow:0 0 0 3px rgba(255,80,80,.7),0 8px 32px rgba(255,80,80,.2);
-      animation:shake .35s;
+
+    /* Silhouette – drawn once, fully opaque black figure */
+    .sil{
+      position:absolute;
+      inset:0;
+      width:100%;height:100%;
+      object-fit:contain;
+      /* multiply: white bg disappears, black body stays black */
+      mix-blend-mode:multiply;
     }
+
+    /* Costume overlay – screen blend on top of black silhouette:
+       screen(black,color) = color  → costume colours appear on the body
+       screen(black,white) = white  → costume white bg appears white on body  (ok)
+       screen(white,anything) = white → outside body disappears into white bg */
+    .cos{
+      position:absolute;
+      inset:0;
+      width:100%;height:100%;
+      object-fit:contain;
+      mix-blend-mode:screen;
+      transition:opacity .25s;
+      pointer-events:none;
+      z-index:1;
+    }
+
+    /* thumbnail strip at bottom */
+    .thumb-bar{display:flex;gap:10px;overflow-x:auto;padding:4px 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .thumb-bar::-webkit-scrollbar{display:none}
+    .thumb{
+      flex-shrink:0;width:60px;height:60px;border-radius:14px;
+      background:#fff;
+      overflow:hidden;cursor:pointer;
+      border:2.5px solid transparent;
+      transition:border-color .15s,transform .1s;
+    }
+    .thumb img{width:100%;height:100%;object-fit:contain}
+    .thumb.active{border-color:#5BB3E0}
+    .thumb:active{transform:scale(.92)}
+
+    /* ── label ── */
+    .cos-label{font-size:15px;font-weight:700;letter-spacing:.04em;min-height:22px;text-align:center}
+
+    /* ── confirm btn ── */
+    .btn{width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#5BB3E0,#D96BA8);color:#fff;font-family:inherit;font-size:16px;font-weight:800;letter-spacing:.06em;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s,opacity .1s}
+    .btn:active{transform:scale(.97);opacity:.9}
+
+    /* ── feedback ── */
+    .hint{min-height:52px;font-size:13px;color:rgba(255,255,255,.5);text-align:center;line-height:1.55;padding:0 8px}
+
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+    .shake{animation:shake .45s ease}
 
-    /* silhouette — subtle ghost under the costume */
-    .sil{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:.25;pointer-events:none}
-
-    /* costume image — multiply removes white bg so it blends with the silhouette */
-    .cos-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;opacity:0;transition:opacity .18s}
-    .cos-img.loaded{opacity:1}
-
-    /* CSS placeholder shown when image file is missing */
-    .cos-ph{position:absolute;top:8%;left:6%;width:88%;height:84%;border-radius:16px;display:none;align-items:center;justify-content:center;font-size:50px;opacity:.75}
-
-    /* ── info row ── */
-    .info{display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 2px}
-    .cos-name{font-size:15px;font-weight:700}
-    .cos-num{font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.06em}
-
-    /* ── wrong hint ── */
-    .hint{font-size:13px;color:#FF8080;font-weight:600;text-align:center;min-height:20px}
-
-    /* ── validate ── */
-    .btn-v{width:100%;padding:16px;border-radius:50px;border:none;background:linear-gradient(135deg,#5BB3E0,#D96BA8);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.04em;transition:transform .1s;-webkit-tap-highlight-color:transparent}
-    .btn-v:active{transform:scale(.97)}
-
-    /* ── success ── */
-    #success{position:fixed;inset:0;background:#0d0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s}
-    #success.show{opacity:1;pointer-events:all}
-    .s-icon{font-size:76px;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
-    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
-    .s-title{font-size:clamp(22px,6vw,32px);font-weight:800;background:linear-gradient(135deg,#5BB3E0,#D96BA8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
-    .s-sub{font-size:14px;color:rgba(255,255,255,.5);text-align:center;max-width:260px;line-height:1.5}
-    .btn-home{padding:13px 30px;border-radius:50px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-top:4px}
-
-    /* ── confetti ── */
-    #confetti{position:fixed;inset:0;pointer-events:none;z-index:99;overflow:hidden}
-    .pt{position:absolute;border-radius:50%;animation:fall var(--d) var(--delay) ease-in both}
-    @keyframes fall{0%{transform:translate(var(--tx),-20px) rotate(0deg);opacity:1}100%{transform:translate(var(--tx),105vh) rotate(540deg);opacity:0}}
+    /* ── win overlay ── */
+    .win-overlay{
+      display:none;position:fixed;inset:0;z-index:99;
+      background:rgba(13,13,26,.92);
+      flex-direction:column;align-items:center;justify-content:center;gap:22px;
+      text-align:center;padding:32px;
+    }
+    .win-overlay.show{display:flex}
+    .win-emoji{font-size:72px}
+    .win-title{font-size:28px;font-weight:800;background:linear-gradient(135deg,#5BB3E0,#D96BA8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .win-sub{font-size:15px;color:rgba(255,255,255,.6)}
+    .win-btn{padding:16px 40px;border:none;border-radius:16px;background:linear-gradient(135deg,#5BB3E0,#D96BA8);color:#fff;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+    #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:100}
   </style>
 </head>
 <body>
-<div id="confetti"></div>
-
 <div class="page">
-  <button class="back" onclick="window.location.href='/'">&#8592; Retour</button>
-
-  <h1>&#10022; HABILLE LA DANSEUSE &#10022;</h1>
-  <p class="sub">Quel costume portait-elle pendant le spectacle&nbsp;?</p>
+  <button class="back" onclick="history.back()">← Retour</button>
+  <h1>HABILLE LA DANSEUSE</h1>
+  <p class="sub">Choisis le bon costume !</p>
 
   <div class="row">
-    <button class="arrow" id="btn-prev">&#8592;</button>
+    <button class="arrow" id="prev" aria-label="Précédent">&#8249;</button>
 
     <div class="stage" id="stage">
-      <!-- silhouette ghost -->
-      <img class="sil" src="/costumes/silhouette.png" alt="" onerror="this.style.display='none'" />
-      <!-- costume overlay -->
-      <img class="cos-img" id="cos-img" src="" alt="" />
-      <!-- CSS fallback when image file is missing -->
-      <div class="cos-ph" id="cos-ph"></div>
+      <!-- silhouette always present -->
+      <img class="sil" id="sil-img" src="/costumes/silhouette.jpg" alt="silhouette" />
+      <!-- active costume overlay -->
+      <img class="cos" id="cos-img" src="" alt="costume" />
     </div>
 
-    <button class="arrow" id="btn-next">&#8594;</button>
+    <button class="arrow" id="next" aria-label="Suivant">&#8250;</button>
   </div>
 
-  <div class="info">
-    <span class="cos-name" id="cos-name">&#8212;</span>
-    <span class="cos-num"  id="cos-num">1 / 8</span>
-  </div>
+  <div class="cos-label" id="cos-label"></div>
+
+  <div class="thumb-bar" id="thumbs"></div>
 
   <p class="hint" id="hint"></p>
 
-  <button class="btn-v" id="btn-v">Choisir ce costume &#10003;</button>
+  <button class="btn" id="confirm-btn">✓ Choisir ce costume</button>
 </div>
 
-<!-- Success overlay -->
-<div id="success">
-  <div class="s-icon">&#10022;</div>
-  <div class="s-title">BONNE R&Eacute;PONSE&nbsp;!</div>
-  <p class="s-sub">Tu as reconnu le bon costume&nbsp;!</p>
-  <button class="btn-home" onclick="window.location.href='/'">&#8592; Retour au menu</button>
+<!-- win overlay -->
+<div class="win-overlay" id="win-overlay">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">BRAVO !</div>
+  <div class="win-sub" id="win-sub">Tu as trouvé le bon costume !</div>
+  <button class="win-btn" onclick="window.location.href='/'">← Retour à l'accueil</button>
 </div>
+<canvas id="confetti-canvas"></canvas>
 
 <script>
-/* ═══════════════════════════════════════
-   COSTUMES
-   img  → path under /costumes/
-   name → display label
-   bg   → CSS fallback gradient (shown if image file is missing)
-═══════════════════════════════════════ */
+/* ────────────────────────────────────────────────
+   CONFIG – set CORRECT = index of the right costume
+   ──────────────────────────────────────────────── */
 var COSTUMES = [
-  { img: '/costumes/c1.png', name: 'Bikini ray\u00e9',       bg: 'linear-gradient(135deg,#FF8C5A,#FFD166)' },
-  { img: '/costumes/c2.png', name: 'Maillot \u00e0 pois',    bg: 'linear-gradient(135deg,#FFD166,#FF6B6B)' },
-  { img: '/costumes/c3.png', name: 'Ensemble sport',         bg: 'linear-gradient(135deg,#FF6FA1,#FFE08A)' },
-  { img: '/costumes/c4.png', name: 'Justaucorps bleu',       bg: 'linear-gradient(135deg,#7E9EFF,#A0F0E0)' },
-  { img: '/costumes/c5.png', name: 'Costume 5',              bg: 'linear-gradient(135deg,#C084FC,#F0ABFC)' },
-  { img: '/costumes/c6.png', name: 'Costume 6',              bg: 'linear-gradient(135deg,#6EE7B7,#3B82F6)' },
-  { img: '/costumes/c7.png', name: 'Costume 7',              bg: 'linear-gradient(135deg,#FCA5A5,#FBBF24)' },
-  { img: '/costumes/c8.png', name: 'Costume 8',              bg: 'linear-gradient(135deg,#D96BA8,#5BB3E0)' },
+  { img: '/costumes/1.png', name: 'Bikini rayé' },
+  { img: '/costumes/2.png', name: 'Maillot à pois' },
+  { img: '/costumes/3.png', name: 'Ensemble sport' },
+  { img: '/costumes/4.png', name: 'Justaucorps bleu' },
+  { img: '/costumes/5.png', name: 'Costume 5' },
+  { img: '/costumes/6.png', name: 'Costume 6' },
+  { img: '/costumes/7.png', name: 'Costume 7' },
+  { img: '/costumes/8.png', name: 'Costume 8' },
+];
+var CORRECT = 7; // 0-indexed → costume 8 (8.png)
+
+var HINTS = [
+  "Regarde bien la silhouette...",
+  "Il s'agit d'un costume de scène professionnel.",
+  "Pense aux couleurs vives et à l'élégance !"
 ];
 
-var CORRECT  = 7; // 0-indexed → costume 8 is correct
+/* ── state ── */
+var idx = 0;
+var wrongCount = 0;
 
-/* ═══════════════════════════════════════ */
-var current  = 0;
-var attempts = 0;
-var locked   = false;
+/* ── DOM ── */
+var cosImg    = document.getElementById('cos-img');
+var silImg    = document.getElementById('sil-img');
+var cosLabel  = document.getElementById('cos-label');
+var hintEl    = document.getElementById('hint');
+var thumbsEl  = document.getElementById('thumbs');
+var stage     = document.getElementById('stage');
+var overlay   = document.getElementById('win-overlay');
 
-var stageEl = document.getElementById('stage');
-var imgEl   = document.getElementById('cos-img');
-var phEl    = document.getElementById('cos-ph');
-var nameEl  = document.getElementById('cos-name');
-var numEl   = document.getElementById('cos-num');
-var hintEl  = document.getElementById('hint');
+/* ── build thumbnails ── */
+COSTUMES.forEach(function(c, i) {
+  var div = document.createElement('div');
+  div.className = 'thumb' + (i === 0 ? ' active' : '');
+  div.dataset.i = i;
+  var bg = document.createElement('div');
+  bg.style.cssText = 'width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden';
+  var im = document.createElement('img');
+  im.src = c.img; im.alt = c.name;
+  im.style.cssText = 'width:100%;height:100%;object-fit:contain';
+  bg.appendChild(im);
+  div.appendChild(bg);
+  div.addEventListener('click', function(){ go(+this.dataset.i); });
+  thumbsEl.appendChild(div);
+});
 
-function render() {
-  var c = COSTUMES[current];
-  nameEl.textContent = c.name;
-  numEl.textContent  = (current + 1) + ' / ' + COSTUMES.length;
-  hintEl.textContent = '';
-
-  // Reset image state
-  imgEl.classList.remove('loaded');
-  imgEl.style.display = 'block';
-
-  imgEl.onerror = function () {
-    imgEl.style.display = 'none';
-    phEl.style.display  = 'flex';
-    phEl.style.background = c.bg;
-    phEl.textContent = '';
-  };
-  imgEl.onload = function () {
-    phEl.style.display = 'none';
-    imgEl.classList.add('loaded');
-  };
-
-  imgEl.src = c.img;
-
-  // Already cached and broken
-  if (imgEl.complete && imgEl.naturalWidth === 0) {
-    imgEl.style.display = 'none';
-    phEl.style.display  = 'flex';
-    phEl.style.background = c.bg;
-    phEl.textContent = '';
-  } else if (imgEl.complete && imgEl.naturalWidth > 0) {
-    phEl.style.display = 'none';
-    imgEl.classList.add('loaded');
-  }
+function go(i) {
+  idx = (i + COSTUMES.length) % COSTUMES.length;
+  cosImg.src = COSTUMES[idx].img;
+  cosLabel.textContent = COSTUMES[idx].name;
+  document.querySelectorAll('.thumb').forEach(function(t, j){ t.classList.toggle('active', j===idx); });
+  // scroll thumb into view
+  var active = thumbsEl.children[idx];
+  if(active) active.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
 }
 
-/* ── Navigation ── */
-function prev() { if (!locked) { current = (current - 1 + COSTUMES.length) % COSTUMES.length; render(); } }
-function next() { if (!locked) { current = (current + 1) % COSTUMES.length; render(); } }
+document.getElementById('prev').addEventListener('click', function(){ go(idx-1); });
+document.getElementById('next').addEventListener('click', function(){ go(idx+1); });
 
-document.getElementById('btn-prev').addEventListener('click', prev);
-document.getElementById('btn-next').addEventListener('click', next);
+/* swipe */
+var tx=0;
+stage.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+stage.addEventListener('touchend',function(e){
+  var dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>40) go(dx<0?idx+1:idx-1);
+},{passive:true});
 
-/* ── Swipe on stage ── */
-var swipeX = 0;
-stageEl.addEventListener('touchstart', function (e) { swipeX = e.touches[0].clientX; }, { passive: true });
-stageEl.addEventListener('touchend',   function (e) {
-  var dx = e.changedTouches[0].clientX - swipeX;
-  if (Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
-}, { passive: true });
-
-/* ── Validate ── */
-document.getElementById('btn-v').addEventListener('click', function () {
-  if (locked) return;
-  attempts++;
-  if (current === CORRECT) {
-    locked = true;
-    spawnConfetti();
-    document.getElementById('success').classList.add('show');
+/* confirm */
+document.getElementById('confirm-btn').addEventListener('click', function(){
+  if(idx===CORRECT){
+    winSequence();
   } else {
-    stageEl.classList.add('wrong');
-    setTimeout(function () { stageEl.classList.remove('wrong'); }, 400);
-    var msgs = [
-      'Ce n\'est pas \u00e7a\u2026 Cherche encore\u00a0!',
-      'Pas tout \u00e0 fait\u00a0! Continue.',
-      'Presque\u2026 tu y es presque\u00a0!',
-    ];
-    hintEl.textContent = msgs[Math.min(attempts - 1, msgs.length - 1)];
+    stage.classList.add('shake');
+    stage.addEventListener('animationend',function h(){stage.classList.remove('shake');stage.removeEventListener('animationend',h);});
+    hintEl.textContent = HINTS[Math.min(wrongCount, HINTS.length-1)];
+    wrongCount++;
   }
 });
 
-/* ── Confetti ── */
-function spawnConfetti() {
-  var w    = document.getElementById('confetti');
-  w.innerHTML = '';
-  var cols = ['#5BB3E0', '#D96BA8', '#fff', '#7ECEF4', '#E87DB5'];
-  for (var i = 0; i < 60; i++) {
-    var el  = document.createElement('div');
-    el.className = 'pt';
-    var sz  = 5 + Math.random() * 8;
-    el.style.cssText =
-      '--tx:' + ((Math.random() - .5) * 80) + 'vw;' +
-      '--d:' + (1.1 + Math.random() * 1.8) + 's;' +
-      '--delay:' + Math.random() * .7 + 's;' +
-      'left:' + (5 + Math.random() * 90) + '%;top:0;' +
-      'width:' + sz + 'px;height:' + sz + 'px;' +
-      'background:' + cols[i % cols.length] + ';';
-    w.appendChild(el);
-  }
+/* ── init ── */
+go(0);
+
+/* ──────── WIN SEQUENCE ──────── */
+function winSequence(){
+  overlay.classList.add('show');
+  var sub = document.getElementById('win-sub');
+  sub.textContent = '✨ Le bon costume est : ' + COSTUMES[CORRECT].name + ' !';
+  startConfetti();
+  setTimeout(stopConfetti, 5000);
 }
 
-render();
+/* tiny confetti */
+(function(){
+  var C=document.getElementById('confetti-canvas');
+  var cx=C.getContext('2d');
+  var pieces=[];var running=false;var raf;
+  var COLS=['#5BB3E0','#D96BA8','#fff','#FFD700','#a78bfa'];
+  function resize(){C.width=window.innerWidth;C.height=window.innerHeight;}
+  resize(); window.addEventListener('resize',resize);
+  function spawn(){
+    for(var i=0;i<120;i++){
+      pieces.push({x:Math.random()*C.width,y:-10-Math.random()*40,
+        vx:(Math.random()-.5)*4,vy:2+Math.random()*4,
+        r:5+Math.random()*6,col:COLS[Math.floor(Math.random()*COLS.length)],
+        rot:Math.random()*360,rv:(Math.random()-.5)*8,life:1});
+    }
+  }
+  function frame(){
+    cx.clearRect(0,0,C.width,C.height);
+    pieces=pieces.filter(function(p){return p.y<C.height+20&&p.life>0;});
+    pieces.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.life-=0.005;
+      cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot*Math.PI/180);
+      cx.fillStyle=p.col;cx.globalAlpha=p.life;
+      cx.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);
+      cx.restore();
+    });
+    if(running)raf=requestAnimationFrame(frame);
+  }
+  window.startConfetti=function(){running=true;spawn();frame();};
+  window.stopConfetti=function(){running=false;cancelAnimationFrame(raf);setTimeout(function(){cx.clearRect(0,0,C.width,C.height);},200);};
+})();
 </script>
 </body>
 </html>
