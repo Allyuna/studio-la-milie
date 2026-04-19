@@ -240,10 +240,22 @@
   </div>
 </div>
 
-<!-- Error overlay (shown if .mind file missing or camera denied) -->
+<!-- Loading overlay -->
+<div id="loading-overlay" style="
+  position:fixed;inset:0;z-index:400;
+  background:#0d0d1a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  font-family:'Poppins',Arial,sans-serif;color:white;text-align:center;padding:32px;
+">
+  <div style="width:48px;height:48px;border:3px solid rgba(255,255,255,0.15);border-top-color:#5BB3E0;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+  <p id="loading-text" style="font-size:14px;color:rgba(255,255,255,0.6);">Chargement de la caméra…</p>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</div>
+
+  <!-- Error overlay (shown if .mind file missing or camera denied) -->
 <div id="error-overlay">
-  <h2>⚠️ Caméra inaccessible</h2>
-  <p>Autorisez l'accès à la caméra dans les paramètres de votre navigateur, puis rechargez la page.</p>
+  <h2 id="error-title">⚠️ Caméra inaccessible</h2>
+  <p id="error-msg">Autorisez l'accès à la caméra dans les paramètres de votre navigateur, puis rechargez la page.</p>
   <button onclick="location.reload()">Réessayer</button>
   <div id="manual-link-error" onclick="manualFallback()" style="font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-decoration:underline;margin-top:4px;">
     Entrer le code manuellement
@@ -494,10 +506,25 @@
 
   // ── Start AR ──────────────────────────────────────────────
   (async () => {
+    // First check the .mind file exists before asking for camera
+    try {
+      const res = await fetch('/targets.mind', { method: 'HEAD' });
+      if (!res.ok) throw new Error('targets.mind not found');
+    } catch (_) {
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('error-title').textContent = '⚙️ Marqueur non configuré';
+      document.getElementById('error-msg').textContent =
+        'Le fichier de reconnaissance (targets.mind) n\'est pas encore en place. Revenez quand le jeu sera lancé !';
+      document.getElementById('error-overlay').classList.add('visible');
+      return;
+    }
+
     try {
       await mindarThree.start();
+      document.getElementById('loading-overlay').style.display = 'none';
     } catch (err) {
       console.error('MindAR error:', err);
+      document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('error-overlay').classList.add('visible');
     }
   })();
