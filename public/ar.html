@@ -108,12 +108,12 @@
 <script>
 'use strict';
 
+// ── Helpers ───────────────────────────────────────────────
 function setStatus(msg, isErr) {
   const el = document.getElementById('status-line');
   el.textContent = msg;
   el.className = isErr ? 'err' : '';
 }
-
 function showError(title, msg) {
   document.getElementById('splash').style.display = 'none';
   document.getElementById('err-title').textContent = title;
@@ -147,148 +147,161 @@ function buildCard(code) {
   return cv;
 }
 
-// ── Setup MindAR ─────────────────────────────────────────
-const mindarThree = new window.MINDAR.IMAGE.MindARThree({
-  container: document.getElementById('ar-container'),
-  imageTargetSrc: '/targets.mind',
-  maxTrack: 1,
-  uiLoading: 'no',
-  uiScanning: 'no',
-  uiError: 'no',
-});
-const {renderer, scene, camera} = mindarThree;
-renderer.setClearColor(0x000000, 0); // transparent canvas — video shows through
+// ── All MindAR init happens here, on tap ─────────────────
+// Nothing runs at page load — avoids top-level errors that
+// would silently prevent startAR from being defined.
+let mindarThree = null;
 
-scene.add(new window.THREE.AmbientLight(0xffffff, 1.0));
-const d=new window.THREE.DirectionalLight(0xffffff,1.1);d.position.set(.5,1,2);scene.add(d);
-
-const tex=new window.THREE.CanvasTexture(buildCard('473'));
-const card=new window.THREE.Mesh(
-  new window.THREE.BoxGeometry(.50,.25,.022),
-  [
-    new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-    new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-    new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-    new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-    new window.THREE.MeshPhongMaterial({map:tex}),
-    new window.THREE.MeshPhongMaterial({color:0xCC5FA0}),
-  ]
-);
-card.position.set(0,.20,0);card.scale.set(0,0,0);
-
-const pGeo=new window.THREE.SphereGeometry(.007,4,4);
-const pMats=[
-  new window.THREE.MeshBasicMaterial({color:0x7ECEF4}),
-  new window.THREE.MeshBasicMaterial({color:0xE87DB5}),
-  new window.THREE.MeshBasicMaterial({color:0xffffff}),
-];
-const particles=Array.from({length:16},(_,i)=>{
-  const m=new window.THREE.Mesh(pGeo,pMats[i%3]);
-  m.visible=false;
-  m.userData={ph:(i/16)*Math.PI*2,r:.26+Math.random()*.14,sp:.45+Math.random()*.55,yb:.20+Math.random()*.18,ya:.025+Math.random()*.025};
-  return m;
-});
-
-const anchor=mindarThree.addAnchor(0);
-anchor.group.add(card);
-particles.forEach(p=>anchor.group.add(p));
-
-let trackStart=null, btnShown=false;
-
-anchor.onTargetFound=()=>{
-  trackStart=Date.now();
-  document.getElementById('hint').innerHTML='🎯 Tenez immobile…';
-  document.getElementById('dot').classList.add('locked');
-};
-anchor.onTargetLost=()=>{
-  if(btnShown)return;
-  trackStart=null;
-  card.scale.set(0,0,0);
-  particles.forEach(p=>{p.visible=false;});
-  document.getElementById('hint').innerHTML='📷 Pointez vers le logo<br/><strong>Studio La Milie</strong>';
-  document.getElementById('dot').classList.remove('locked');
-};
-
-// ── Start ─────────────────────────────────────────────────
 window.startAR = async function() {
-  document.getElementById('start-btn').style.display='none';
-  document.getElementById('spinner').style.display='block';
-  setStatus('Chargement…');
+  const btn = document.getElementById('start-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+  document.getElementById('spinner').style.display = 'block';
+  setStatus('Initialisation…');
 
   try {
+    // Build MindAR instance
+    mindarThree = new window.MINDAR.IMAGE.MindARThree({
+      container: document.getElementById('ar-container'),
+      imageTargetSrc: '/targets.mind',
+      maxTrack: 1,
+      uiLoading: 'no',
+      uiScanning: 'no',
+      uiError: 'no',
+    });
+    const {renderer, scene, camera} = mindarThree;
+    renderer.setClearColor(0x000000, 0);
+
+    // Lights
+    scene.add(new window.THREE.AmbientLight(0xffffff, 1.0));
+    const dl = new window.THREE.DirectionalLight(0xffffff, 1.1);
+    dl.position.set(.5,1,2); scene.add(dl);
+
+    // Card mesh
+    const tex = new window.THREE.CanvasTexture(buildCard('473'));
+    const card = new window.THREE.Mesh(
+      new window.THREE.BoxGeometry(.50,.25,.022),
+      [
+        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshPhongMaterial({map:tex}),
+        new window.THREE.MeshPhongMaterial({color:0xCC5FA0}),
+      ]
+    );
+    card.position.set(0,.20,0); card.scale.set(0,0,0);
+
+    // Particles
+    const pGeo = new window.THREE.SphereGeometry(.007,4,4);
+    const pMats = [
+      new window.THREE.MeshBasicMaterial({color:0x7ECEF4}),
+      new window.THREE.MeshBasicMaterial({color:0xE87DB5}),
+      new window.THREE.MeshBasicMaterial({color:0xffffff}),
+    ];
+    const particles = Array.from({length:16},(_,i)=>{
+      const m = new window.THREE.Mesh(pGeo, pMats[i%3]);
+      m.visible = false;
+      m.userData = {ph:(i/16)*Math.PI*2,r:.26+Math.random()*.14,sp:.45+Math.random()*.55,yb:.20+Math.random()*.18,ya:.025+Math.random()*.025};
+      return m;
+    });
+
+    // Anchor
+    const anchor = mindarThree.addAnchor(0);
+    anchor.group.add(card);
+    particles.forEach(p => anchor.group.add(p));
+
+    let trackStart = null, btnShown = false;
+
+    anchor.onTargetFound = () => {
+      trackStart = Date.now();
+      document.getElementById('hint').innerHTML = '🎯 Tenez immobile…';
+      document.getElementById('dot').classList.add('locked');
+    };
+    anchor.onTargetLost = () => {
+      if (btnShown) return;
+      trackStart = null;
+      card.scale.set(0,0,0);
+      particles.forEach(p => { p.visible = false; });
+      document.getElementById('hint').innerHTML = '📷 Pointez vers le logo<br/><strong>Studio La Milie</strong>';
+      document.getElementById('dot').classList.remove('locked');
+    };
+
+    // Start camera
     setStatus('Ouverture de la caméra…');
     await mindarThree.start();
 
-    // Success — hide splash, show HUD
-    document.getElementById('splash').style.display='none';
+    // Success
+    document.getElementById('splash').style.display = 'none';
     document.getElementById('hud').classList.add('on');
 
-    renderer.setAnimationLoop(()=>{
-      const t=Date.now();
-      if(trackStart!==null){
-        const el=t-trackStart;
-        const p=Math.min(1,el/700);
-        const s=1-Math.pow(1-p,3);
+    renderer.setAnimationLoop(() => {
+      const t = Date.now();
+      if (trackStart !== null) {
+        const el = t - trackStart;
+        const p = Math.min(1, el/700);
+        const s = 1 - Math.pow(1-p, 3);
         card.scale.set(s,s,s);
-        card.position.y=.20+Math.sin(t*.0019)*.013;
-        card.rotation.y=Math.sin(t*.0009)*.09;
-        card.rotation.x=Math.sin(t*.0013)*.04;
-        if(el>500){
-          particles.forEach(p=>{
-            p.visible=true;
-            const u=p.userData;
-            const a=t*.001*u.sp+u.ph;
-            p.position.x=Math.cos(a)*u.r;
-            p.position.z=Math.sin(a)*u.r;
-            p.position.y=u.yb+Math.sin(t*.0025+u.ph)*u.ya;
-            p.scale.setScalar(.6+.4*Math.abs(Math.sin(t*.002+u.ph)));
+        card.position.y = .20 + Math.sin(t*.0019)*.013;
+        card.rotation.y = Math.sin(t*.0009)*.09;
+        card.rotation.x = Math.sin(t*.0013)*.04;
+        if (el > 500) {
+          particles.forEach(p => {
+            p.visible = true;
+            const u = p.userData;
+            const a = t*.001*u.sp + u.ph;
+            p.position.x = Math.cos(a)*u.r;
+            p.position.z = Math.sin(a)*u.r;
+            p.position.y = u.yb + Math.sin(t*.0025+u.ph)*u.ya;
+            p.scale.setScalar(.6 + .4*Math.abs(Math.sin(t*.002+u.ph)));
           });
         }
-        if(el>2500&&!btnShown){
-          btnShown=true;
-          document.getElementById('found-btn').style.display='block';
-          document.getElementById('hint').style.opacity='0';
+        if (el > 2500 && !btnShown) {
+          btnShown = true;
+          document.getElementById('found-btn').style.display = 'block';
+          document.getElementById('hint').style.opacity = '0';
         }
       }
-      renderer.render(scene,camera);
+      renderer.render(scene, camera);
     });
 
   } catch(e) {
-    console.error('AR error:',e);
-    const msg = (e&&e.message||'').toLowerCase();
-    if(msg.includes('permission')||msg.includes('denied')||msg.includes('notallowed')){
-      showError('📷 Accès caméra refusé','Allez dans Réglages → Safari → Caméra → Autoriser, puis revenez et rechargez.');
-    } else if(msg.includes('notfound')||msg.includes('devicenotfound')){
-      showError('📷 Caméra introuvable','Aucune caméra détectée sur cet appareil.');
+    console.error('AR error:', e);
+    const msg = (e && e.message || '').toLowerCase();
+    if (msg.includes('permission') || msg.includes('denied') || msg.includes('notallowed')) {
+      showError('📷 Accès caméra refusé', 'Allez dans Réglages → Safari → Caméra → Autoriser, puis rechargez.');
+    } else if (msg.includes('notfound') || msg.includes('devicenotfound')) {
+      showError('📷 Caméra introuvable', 'Aucune caméra détectée sur cet appareil.');
     } else {
-      showError('⚠️ Erreur ('+((e&&e.name)||'?')+')', 'Détail : '+(e&&e.message||String(e)));
+      showError('⚠️ Erreur (' + ((e && e.name) || '?') + ')', 'Détail : ' + (e && e.message || String(e)));
     }
   }
 };
 
-window.confirmCode=function(){
-  try{mindarThree.stop();}catch(_){}
-  localStorage.setItem('ce_code_mission5','473');
-  localStorage.setItem('ce_code_mission5_ts',Date.now().toString());
-  window.location.href='/?mission=5&status=complete';
+window.confirmCode = function() {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+  localStorage.setItem('ce_code_mission5', '473');
+  localStorage.setItem('ce_code_mission5_ts', Date.now().toString());
+  window.location.href = '/?mission=5&status=complete';
 };
 
-window.manualFallback=function(){
-  try{mindarThree.stop();}catch(_){}
-  renderer.setAnimationLoop(null);
-  const v=prompt('Entrez le code que vous avez trouvé :');
-  if(v===null){location.reload();return;}
-  if(v.trim()==='473'){
-    localStorage.setItem('ce_code_mission5','473');
-    localStorage.setItem('ce_code_mission5_ts',Date.now().toString());
-    window.location.href='/?mission=5&status=complete';
+window.manualFallback = function() {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+  const v = prompt('Entrez le code que vous avez trouvé :');
+  if (v === null) { location.reload(); return; }
+  if (v.trim() === '473') {
+    localStorage.setItem('ce_code_mission5', '473');
+    localStorage.setItem('ce_code_mission5_ts', Date.now().toString());
+    window.location.href = '/?mission=5&status=complete';
   } else {
     alert('Code incorrect — cherchez encore ! 🔍');
     location.reload();
   }
 };
 
-window.addEventListener('beforeunload',()=>{try{mindarThree.stop();}catch(_){}});
+window.addEventListener('beforeunload', () => {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+});
 </script>
 </body>
 </html>
