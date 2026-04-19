@@ -26,6 +26,12 @@ export default function Home() {
       title: t.quiz_title,
       href:  '/quiz.html',
     },
+    {
+      badge: t.costume_badge,
+      label: t.costume_label,
+      title: t.costume_title,
+      href:  '/costume.html',
+    },
   ]
 
   function goTo(href) {

@@ -27,6 +27,9 @@ const translations = {
     quiz_label:      'Mission 7 sur 15',
     quiz_title:      'Le Grand Quiz',
     quiz_badge:      'Quiz',
+    costume_label:   'Mission 8 sur 15',
+    costume_title:   'Habille la Danseuse',
+    costume_badge:   'Mission Costume',
   },
   en: {
     home_title:      'Color Escape',
@@ -50,6 +53,9 @@ const translations = {
     quiz_label:      'Mission 7 of 15',
     quiz_title:      'The Big Quiz',
     quiz_badge:      'Quiz',
+    costume_label:   'Mission 8 of 15',
+    costume_title:   'Dress the Dancer',
+    costume_badge:   'Costume Mission',
   },
 }
 
