@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>Mission – Dessine la forme</title>
+  <title>Mission ï¿½ Dessine la forme</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap" rel="stylesheet" />
   <style>
@@ -272,10 +272,12 @@ function analyse() {
   var gap = Math.hypot(all[0].x-all[all.length-1].x, all[0].y-all[all.length-1].y);
   if(gap/perim > 0.22) return;
 
-  var eps    = Math.max(15, perim*0.05);
+  // Generous epsilon so slight wobbly sides merge into one straight line
+  var eps    = Math.max(20, perim*0.08);
   var simple = rdp(all, eps);
   var n      = simple.length;
-  if(n < 3 || n > 5) return;
+  // Strictly 3 corners â€” tolerance via the larger epsilon above
+  if(n !== 3) return;
 
   validated = true;
   triggerSuccess();
