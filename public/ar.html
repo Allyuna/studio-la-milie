@@ -18,11 +18,22 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* MindAR injects canvas + video here */
+    /* MindAR injects canvas + video here — must be fixed fullscreen */
     #ar-container {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* Force MindAR's injected elements to be visible */
+    #ar-container video,
+    #ar-container canvas {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
     }
 
     /* ── UI overlay ─────────────────────────────── */
@@ -392,6 +403,9 @@
 
   const { renderer, scene, camera } = mindarThree;
 
+  // CRITICAL: transparent background so camera video shows through the canvas
+  renderer.setClearColor(0x000000, 0);
+
   // Lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
@@ -475,70 +489,57 @@
     }
   };
 
-  // ── Render loop ───────────────────────────────────────────
-  renderer.setAnimationLoop(() => {
-    const t = Date.now();
-
-    if (trackStart !== null) {
-      const elapsed = t - trackStart;
-
-      // Ease-out cubic scale-in (0 → 1 over 700 ms)
-      const p = Math.min(1, elapsed / 700);
-      const scale = 1 - Math.pow(1 - p, 3);
-      cardMesh.scale.set(scale, scale, scale);
-
-      // Gentle float + sway
-      cardMesh.position.y       = 0.20 + Math.sin(t * 0.0019) * 0.013;
-      cardMesh.rotation.y       = Math.sin(t * 0.0009) * 0.09;
-      cardMesh.rotation.x       = Math.sin(t * 0.0013) * 0.04;
-
-      // Particles appear after card is mostly in
-      if (elapsed > 500) {
-        particles.forEach(p => {
-          p.visible = true;
-          const ud = p.userData;
-          const angle = t * 0.001 * ud.speed + ud.phaseOffset;
-          p.position.x = Math.cos(angle) * ud.radius;
-          p.position.z = Math.sin(angle) * ud.radius;
-          p.position.y = ud.yBase + Math.sin(t * 0.0025 + ud.phaseOffset) * ud.yAmp;
-          const s = 0.6 + 0.4 * Math.abs(Math.sin(t * 0.002 + ud.phaseOffset));
-          p.scale.setScalar(s);
-        });
-      }
-
-      // Reveal button after 2.5 s of stable tracking
-      if (elapsed > 2500 && !btnShown) {
-        btnShown = true;
-        document.getElementById('found-btn').style.display = 'block';
-        document.getElementById('instructions-box').style.opacity = '0';
-      }
-    }
-
-    renderer.render(scene, camera);
-  });
-
   // ── Start AR (triggered by button tap — required by Safari) ──
   async function startAR() {
     document.getElementById('start-btn').style.display = 'none';
     document.getElementById('loading-spinner').style.display = 'block';
     document.getElementById('loading-text').textContent = 'Ouverture de la caméra…';
 
-    // Check .mind file exists
     try {
-      const res = await fetch('/targets.mind', { method: 'HEAD' });
-      if (!res.ok) throw new Error('targets.mind not found');
-    } catch (_) {
-      document.getElementById('loading-overlay').style.display = 'none';
-      document.getElementById('error-title').textContent = '⚙️ Marqueur non configuré';
-      document.getElementById('error-msg').textContent =
-        'Le fichier de reconnaissance n\'est pas encore en place. Revenez quand le jeu sera lancé !';
-      document.getElementById('error-overlay').classList.add('visible');
-      return;
-    }
-
-    try {
+      // start() requests camera permission + loads .mind file
       await mindarThree.start();
+
+      // Hide splash AFTER start() resolves (camera is live)
       document.getElementById('loading-overlay').style.display = 'none';
+
+      // ONLY start rendering loop AFTER camera is live
+      renderer.setAnimationLoop(() => {
+        const t = Date.now();
+
+        if (trackStart !== null) {
+          const elapsed = t - trackStart;
+
+          const p = Math.min(1, elapsed / 700);
+          const scale = 1 - Math.pow(1 - p, 3);
+          cardMesh.scale.set(scale, scale, scale);
+
+          cardMesh.position.y = 0.20 + Math.sin(t * 0.0019) * 0.013;
+          cardMesh.rotation.y = Math.sin(t * 0.0009) * 0.09;
+          cardMesh.rotation.x = Math.sin(t * 0.0013) * 0.04;
+
+          if (elapsed > 500) {
+            particles.forEach(p => {
+              p.visible = true;
+              const ud = p.userData;
+              const angle = t * 0.001 * ud.speed + ud.phaseOffset;
+              p.position.x = Math.cos(angle) * ud.radius;
+              p.position.z = Math.sin(angle) * ud.radius;
+              p.position.y = ud.yBase + Math.sin(t * 0.0025 + ud.phaseOffset) * ud.yAmp;
+              const s = 0.6 + 0.4 * Math.abs(Math.sin(t * 0.002 + ud.phaseOffset));
+              p.scale.setScalar(s);
+            });
+          }
+
+          if (elapsed > 2500 && !btnShown) {
+            btnShown = true;
+            document.getElementById('found-btn').style.display = 'block';
+            document.getElementById('instructions-box').style.opacity = '0';
+          }
+        }
+
+        renderer.render(scene, camera);
+      });
+
     } catch (err) {
       console.error('MindAR error:', err);
       document.getElementById('loading-overlay').style.display = 'none';
