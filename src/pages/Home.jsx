@@ -20,6 +20,12 @@ export default function Home() {
       title: t.draw_title,
       href:  '/draw.html',
     },
+    {
+      badge: t.quiz_badge,
+      label: t.quiz_label,
+      title: t.quiz_title,
+      href:  '/quiz.html',
+    },
   ]
 
   function goTo(href) {

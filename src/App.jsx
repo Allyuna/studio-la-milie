@@ -24,6 +24,9 @@ const translations = {
     draw_title:      'La Forme Secrète',
     draw_badge:      'Mission Dessin',
     draw_desc:       'Observez la chorée et reproduisez la forme que vous avez vue.',
+    quiz_label:      'Mission 7 sur 15',
+    quiz_title:      'Le Grand Quiz',
+    quiz_badge:      'Quiz',
   },
   en: {
     home_title:      'Color Escape',
@@ -44,6 +47,9 @@ const translations = {
     draw_title:      'The Secret Shape',
     draw_badge:      'Drawing Mission',
     draw_desc:       'Watch the choreography and reproduce the shape you saw.',
+    quiz_label:      'Mission 7 of 15',
+    quiz_title:      'The Big Quiz',
+    quiz_badge:      'Quiz',
   },
 }
 

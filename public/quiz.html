@@ -1,0 +1,361 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>Quiz – Studio La Milie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;min-height:100%;background:#0d0d1a;font-family:'Poppins',Arial,sans-serif;color:#fff;overflow-x:hidden}
+    .screen{display:none;flex-direction:column;align-items:center;padding:28px 20px 40px;max-width:500px;margin:0 auto;min-height:100dvh}
+    .screen.active{display:flex}
+
+    /* back */
+    .back{align-self:flex-start;background:none;border:none;color:rgba(255,255,255,.45);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:0 0 16px;transition:color .2s}
+    .back:hover{color:#fff}
+
+    /* hero */
+    .logo-wrap{width:72px;height:72px;border-radius:16px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+    .logo-wrap img{width:64px;height:64px;object-fit:contain}
+    .page-title{font-size:clamp(26px,7vw,34px);font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,#5BB3E0,#D96BA8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center}
+    .page-sub{font-size:13px;color:rgba(255,255,255,.45);text-align:center;letter-spacing:.06em;margin-top:4px;margin-bottom:28px}
+
+    /* category cards */
+    .cat-grid{width:100%;display:flex;flex-direction:column;gap:14px}
+    .cat-card{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:18px;padding:20px 22px;cursor:pointer;display:flex;align-items:center;gap:18px;transition:transform .18s,border-color .18s,box-shadow .18s;-webkit-tap-highlight-color:transparent}
+    .cat-card:active{transform:scale(.97)}
+    .cat-card:hover{border-color:rgba(91,179,224,.5);box-shadow:0 4px 24px rgba(91,179,224,.15)}
+    .cat-icon{font-size:36px;line-height:1;flex-shrink:0}
+    .cat-info{}
+    .cat-name{font-size:18px;font-weight:800;margin-bottom:2px}
+    .cat-count{font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.05em}
+    .cat-score{margin-left:auto;font-size:13px;font-weight:700;color:#5BB3E0;white-space:nowrap}
+
+    /* total banner */
+    .total-banner{width:100%;background:rgba(91,179,224,.08);border:1.5px solid rgba(91,179,224,.2);border-radius:14px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .total-label{font-size:13px;color:rgba(255,255,255,.5);letter-spacing:.06em}
+    .total-val{font-size:22px;font-weight:800;background:linear-gradient(135deg,#5BB3E0,#D96BA8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+    /* progress bar */
+    .prog-wrap{width:100%;height:5px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;margin-bottom:8px}
+    .prog-bar{height:100%;background:linear-gradient(90deg,#5BB3E0,#D96BA8);border-radius:10px;transition:width .35s ease}
+
+    /* question */
+    .q-meta{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .q-counter{font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.08em}
+    .q-points{font-size:12px;font-weight:700;color:#5BB3E0}
+    .q-text{font-size:clamp(16px,4.5vw,20px);font-weight:700;line-height:1.45;text-align:center;margin-bottom:28px;min-height:72px}
+
+    /* choices */
+    .choices{width:100%;display:flex;flex-direction:column;gap:12px}
+    .choice{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:15px 18px;font-family:inherit;font-size:15px;font-weight:600;color:#fff;cursor:pointer;text-align:left;transition:background .15s,border-color .15s,transform .1s;-webkit-tap-highlight-color:transparent}
+    .choice:active{transform:scale(.98)}
+    .choice.correct{background:rgba(76,210,120,.15);border-color:#4CD278;color:#4CD278}
+    .choice.wrong{background:rgba(255,80,80,.12);border-color:#FF5050;color:#FF8080}
+    .choice.disabled{pointer-events:none;opacity:.5}
+
+    /* score screen */
+    .score-circle{width:160px;height:160px;border-radius:50%;border:4px solid transparent;background:linear-gradient(#0d0d1a,#0d0d1a) padding-box, linear-gradient(135deg,#5BB3E0,#D96BA8) border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:16px 0 24px}
+    .score-num{font-size:48px;font-weight:800;line-height:1;background:linear-gradient(135deg,#5BB3E0,#D96BA8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .score-den{font-size:15px;color:rgba(255,255,255,.4);margin-top:2px}
+    .score-msg{font-size:clamp(18px,5vw,24px);font-weight:800;text-align:center;margin-bottom:6px}
+    .score-sub{font-size:14px;color:rgba(255,255,255,.45);text-align:center;margin-bottom:28px}
+    .breakdown{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;margin-bottom:24px}
+    .breakdown-row{display:flex;justify-content:space-between;font-size:14px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .breakdown-row:last-child{border-bottom:none;font-weight:700;padding-top:10px;margin-top:4px}
+
+    /* buttons */
+    .btn{display:block;width:100%;padding:15px;border-radius:50px;border:none;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:opacity .18s,transform .1s;-webkit-tap-highlight-color:transparent;text-align:center}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:linear-gradient(135deg,#5BB3E0,#D96BA8);color:#fff}
+    .btn-secondary{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);color:#fff;margin-top:10px}
+
+    /* confetti */
+    #confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+    .pt{position:absolute;border-radius:50%;animation:fall var(--d) var(--delay) ease-in both}
+    @keyframes fall{0%{transform:translate(var(--tx),-20px) rotate(0deg);opacity:1}100%{transform:translate(var(--tx),105vh) rotate(540deg);opacity:0}}
+  </style>
+</head>
+<body>
+<div id="confetti"></div>
+
+<!-- ════ CATEGORIES ════ -->
+<div id="s-cats" class="screen active">
+  <div class="logo-wrap"><img src="/logo.jpg" alt="Studio La Milie" /></div>
+  <h1 class="page-title">QUIZ</h1>
+  <p class="page-sub">CHOISISSEZ UNE CATEGORIE</p>
+
+  <div id="total-banner" class="total-banner" style="display:none">
+    <span class="total-label">TOTAL SESSION</span>
+    <span class="total-val" id="total-display">0 / 300</span>
+  </div>
+
+  <div class="cat-grid">
+    <div class="cat-card" onclick="startCat(0)">
+      <div class="cat-icon">O</div>
+      <div class="cat-info">
+        <div class="cat-name">Cerceau</div>
+        <div class="cat-count">10 questions &bull; 100 pts</div>
+      </div>
+      <div class="cat-score" id="cs0" style="display:none"></div>
+    </div>
+    <div class="cat-card" onclick="startCat(1)">
+      <div class="cat-icon">~</div>
+      <div class="cat-info">
+        <div class="cat-name">Tissu</div>
+        <div class="cat-count">10 questions &bull; 100 pts</div>
+      </div>
+      <div class="cat-score" id="cs1" style="display:none"></div>
+    </div>
+    <div class="cat-card" onclick="startCat(2)">
+      <div class="cat-icon">|</div>
+      <div class="cat-info">
+        <div class="cat-name">Pole Dance</div>
+        <div class="cat-count">10 questions &bull; 100 pts</div>
+      </div>
+      <div class="cat-score" id="cs2" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ QUIZ ════ -->
+<div id="s-quiz" class="screen">
+  <button class="back" onclick="goHome()">&#8592; Retour</button>
+  <div class="prog-wrap"><div class="prog-bar" id="prog"></div></div>
+  <div class="q-meta">
+    <span class="q-counter" id="q-counter">Question 1 / 10</span>
+    <span class="q-points" id="q-pts">0 pts</span>
+  </div>
+  <div class="q-text" id="q-text"></div>
+  <div class="choices" id="choices"></div>
+</div>
+
+<!-- ════ SCORE ════ -->
+<div id="s-score" class="screen">
+  <button class="back" onclick="goHome()">&#8592; Retour aux cat&eacute;gories</button>
+  <div class="score-circle">
+    <div class="score-num" id="sc-num">0</div>
+    <div class="score-den">/ 100</div>
+  </div>
+  <div class="score-msg" id="sc-msg"></div>
+  <div class="score-sub" id="sc-sub"></div>
+  <div class="breakdown" id="sc-breakdown"></div>
+  <button class="btn btn-primary" onclick="retryCat()">Rejouer cette cat&eacute;gorie</button>
+  <button class="btn btn-secondary" onclick="goHome()">Choisir une autre cat&eacute;gorie</button>
+</div>
+
+<script>
+/* ═══════════════ DATA ═══════════════ */
+var CATS = [
+  {
+    name: 'Cerceau',
+    qs: [
+      { q: "Quel autre nom d\u00e9signe le cerceau a\u00e9rien ?", choices: ["Trap\u00e8ze","Lyra","Tissu","Corde"], correct: 1 },
+      { q: "Le cerceau peut \u00eatre suspendu en combien de points d'accroche ?", choices: ["Uniquement 1","Uniquement 2","1 ou 2","3 ou plus"], correct: 2 },
+      { q: "Comment s'appelle la figure o\u00f9 l'on est t\u00eate en bas, jambes \u00e9cart\u00e9es dans le cerceau ?", choices: ["La sir\u00e8ne","L'\u00e9toile","Le papillon","Le ballanc\u00e9"], correct: 2 },
+      { q: "Quel groupe musculaire est prioritaire \u00e0 renforcer pour d\u00e9buter le cerceau ?", choices: ["Les mollets","Les abdos et les bras","Les genoux","Les chevilles"], correct: 1 },
+      { q: "Le cerceau peut-il \u00eatre utilis\u00e9 au sol ?", choices: ["Non, jamais","Oui, pour certaines chor\u00e9graphies","Seulement \u00e0 l'\u00e9chauffement","Uniquement en duo"], correct: 1 },
+      { q: "Quelle est la mati\u00e8re principale d'un cerceau professionnel ?", choices: ["Bois","Plastique","Aluminium","Acier"], correct: 3 },
+      { q: "En cirque contemporain, le cerceau appartient \u00e0 quelle famille ?", choices: ["Arts de rue","Agr\u00e8s a\u00e9riens","Jonglerie","Acrobatie au sol"], correct: 1 },
+      { q: "Comment s'appelle la figure o\u00f9 l'on tient le cerceau uniquement avec les creux des genoux ?", choices: ["Le croche-pied","Le knee hang","La planche","Le split"], correct: 1 },
+      { q: "Pour monter dans un cerceau, quelle technique de bras est essentielle ?", choices: ["Le tir\u00e9-pouss\u00e9","Le lanc\u00e9","Le balanc\u00e9","Le crois\u00e9"], correct: 0 },
+      { q: "Quel accessoire est souvent utilis\u00e9 pour prot\u00e9ger les poignets en cerceau ?", choices: ["Des gants","Du tape / du strapping","Des baudriers","Des mitaines"], correct: 1 }
+    ]
+  },
+  {
+    name: 'Tissu',
+    qs: [
+      { q: "Quel est le nom anglais du tissu a\u00e9rien ?", choices: ["Aerial rope","Aerial silk","Aerial hoop","Aerial net"], correct: 1 },
+      { q: "Comment s'appelle la figure de descente rapide en vrille dans le tissu ?", choices: ["La mont\u00e9e","Le cocon","Le drop (chute)","L'araign\u00e9e"], correct: 2 },
+      { q: "Comment s'appelle la position o\u00f9 l'on est entour\u00e9\u00b7e de tissu de la t\u00eate aux pieds ?", choices: ["Le papillon","La momie / Le cocon","La planche","La balance"], correct: 1 },
+      { q: "Combien de l\u00e9s de tissu utilise-t-on en a\u00e9rien classique ?", choices: ["1","2","3","4"], correct: 1 },
+      { q: "Quel \u00e9l\u00e9ment technique est le plus important \u00e0 ma\u00eetriser avant les figures avanc\u00e9es ?", choices: ["Les chevilles","La nuque","Le ga\u00eenage et les bras","Les genoux"], correct: 2 },
+      { q: "Quelle est g\u00e9n\u00e9ralement la premi\u00e8re technique apprise en tissu a\u00e9rien ?", choices: ["Le drop","La mont\u00e9e par les pieds","Le split a\u00e9rien","Le retournement invers\u00e9"], correct: 1 },
+      { q: "Comment s'appelle le noeud de tissu pass\u00e9 autour du pied ?", choices: ["La boucle","La potence","Le pied de biche","Le cadre"], correct: 2 },
+      { q: "Le tissu a\u00e9rien est souvent associ\u00e9 \u00e0 quel univers artistique ?", choices: ["Hip-hop","Cirque contemporain","Breakdance","Patinage artistique"], correct: 1 },
+      { q: "Quel type de tissu est id\u00e9al pour d\u00e9buter ?", choices: ["Coton rigide","Tissu stretch en lycra","Soie naturelle","Nylon"], correct: 1 },
+      { q: "Comment s'appelle la technique o\u00f9 le tissu est crois\u00e9 autour des hanches ?", choices: ["La ceinture","Le hip key","L'appui dorsal","Le foulard"], correct: 1 }
+    ]
+  },
+  {
+    name: 'Pole Dance',
+    qs: [
+      { q: "En quelle ann\u00e9e la pole dance est-elle reconnue comme discipline sportive par le GAISF ?", choices: ["2010","2014","2017","2020"], correct: 2 },
+      { q: "Quel est le diam\u00e8tre standard d'une barre de pole de comp\u00e9tition ?", choices: ["38 mm","45 mm","52 mm","60 mm"], correct: 1 },
+      { q: "Quels sont les deux modes d'une barre de pole moderne ?", choices: ["Rigide et souple","Statique et spinning","Haut et bas","M\u00e9tal et plastique"], correct: 1 },
+      { q: "Comment appelle-t-on la figure o\u00f9 le corps est horizontal autour de la barre ?", choices: ["La planche","Le drapeau (flag)","L'\u00e9toile","Le pont"], correct: 1 },
+      { q: "Quel produit faut-il EVITER avant une session de pole ?", choices: ["L'eau","La magn\u00e9sie","La cr\u00e8me hydratante","La r\u00e9sine"], correct: 2 },
+      { q: "Quel groupe musculaire est le plus sollicit\u00e9 dans les figures invers\u00e9es ?", choices: ["Les chevilles","Le core (abdos + dos)","Les poignets","Les mollets"], correct: 1 },
+      { q: "Comment s'appelle la figure invers\u00e9e de base o\u00f9 les jambes entourent la barre ?", choices: ["La selle invers\u00e9e","Le chopper / Invert","Le plongeon","L'arc"], correct: 1 },
+      { q: "En comp\u00e9tition, quelle cat\u00e9gorie met l'accent sur l'athl\u00e9tisme pur ?", choices: ["Pole art","Pole exotic","Pole sport","Pole amateur"], correct: 2 },
+      { q: "La pole dance moderne trouve ses origines dans quelle pratique ?", choices: ["La danse classique fran\u00e7aise","Le mat chinois et les bars nord-am\u00e9ricains","Le ballet russe","La capoeira br\u00e9silienne"], correct: 1 },
+      { q: "Comment s'appelle la prise de main de base pour tenir la barre ?", choices: ["La prise invers\u00e9e","La prise cuill\u00e8re","Le strong grip","La prise lat\u00e9rale"], correct: 2 }
+    ]
+  }
+];
+
+/* ═══════════════ STATE ═══════════════ */
+var catScores  = [null, null, null]; // null = not played yet
+var curCat     = 0;
+var curQ       = 0;
+var curScore   = 0;
+var curResults = []; // {correct: bool} per question
+
+/* ═══════════════ NAVIGATION ═══════════════ */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function goHome() {
+  updateHomeScores();
+  show('s-cats');
+}
+
+function updateHomeScores() {
+  var total = 0, count = 0;
+  catScores.forEach(function(s, i){
+    var el = document.getElementById('cs'+i);
+    if(s !== null){
+      el.textContent = s + ' / 100';
+      el.style.display = 'block';
+      total += s; count++;
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  var banner = document.getElementById('total-banner');
+  if(count > 0){
+    document.getElementById('total-display').textContent = total + ' / 300';
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+/* ═══════════════ QUIZ FLOW ═══════════════ */
+function startCat(idx) {
+  curCat     = idx;
+  curQ       = 0;
+  curScore   = 0;
+  curResults = [];
+  show('s-quiz');
+  renderQ();
+}
+
+function retryCat() { startCat(curCat); }
+
+function renderQ() {
+  var cat = CATS[curCat];
+  var q   = cat.qs[curQ];
+  var pct = (curQ / 10) * 100;
+
+  document.getElementById('prog').style.width = pct + '%';
+  document.getElementById('q-counter').textContent = 'Question ' + (curQ+1) + ' / 10';
+  document.getElementById('q-pts').textContent = curScore + ' pts';
+  document.getElementById('q-text').textContent = q.q;
+
+  var box = document.getElementById('choices');
+  box.innerHTML = '';
+  q.choices.forEach(function(c, i){
+    var btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.textContent = c;
+    btn.onclick = function(){ pick(i); };
+    box.appendChild(btn);
+  });
+}
+
+function pick(idx) {
+  var q    = CATS[curCat].qs[curQ];
+  var btns = document.querySelectorAll('.choice');
+  btns.forEach(function(b){ b.classList.add('disabled'); });
+
+  if(idx === q.correct){
+    btns[idx].classList.add('correct');
+    curScore += 10;
+    curResults.push(true);
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[q.correct].classList.add('correct');
+    curResults.push(false);
+  }
+
+  setTimeout(function(){
+    curQ++;
+    if(curQ < 10){
+      renderQ();
+    } else {
+      showScore();
+    }
+  }, 950);
+}
+
+/* ═══════════════ SCORE SCREEN ═══════════════ */
+function showScore() {
+  catScores[curCat] = curScore;
+
+  // Animate number
+  document.getElementById('sc-num').textContent = curScore;
+  document.getElementById('prog').style.width = '100%';
+
+  // Message
+  var msg, sub;
+  if(curScore >= 90){
+    msg = 'Excellent ! Impressionnant !';
+    sub = 'Tu maitrises parfaitement ce sujet.';
+    spawnConfetti();
+  } else if(curScore >= 70){
+    msg = 'Tres bien joue !';
+    sub = 'Quelques details a revoir, mais super !';
+  } else if(curScore >= 50){
+    msg = 'Pas mal !';
+    sub = 'Encore un peu d\'entrainement et tu y es !';
+  } else {
+    msg = 'Continue de t\'entrainer !';
+    sub = 'L\'essentiel c\'est de participer.';
+  }
+  document.getElementById('sc-msg').textContent = msg;
+  document.getElementById('sc-sub').textContent = sub;
+
+  // Breakdown
+  var total = 0;
+  catScores.forEach(function(s){ if(s !== null) total += s; });
+  var rows = '<div class="breakdown-row"><span>' + CATS[curCat].name + '</span><span>' + curScore + ' / 100</span></div>';
+
+  var otherTotal = 0;
+  catScores.forEach(function(s, i){ if(i !== curCat && s !== null){ otherTotal += s; rows += '<div class="breakdown-row"><span>' + CATS[i].name + '</span><span>' + s + ' / 100</span></div>'; } });
+
+  var played = catScores.filter(function(s){ return s !== null; }).length;
+  if(played > 1){
+    rows += '<div class="breakdown-row"><span>TOTAL</span><span>' + total + ' / ' + (played * 100) + '</span></div>';
+  }
+  document.getElementById('sc-breakdown').innerHTML = rows;
+
+  show('s-score');
+}
+
+/* ═══════════════ CONFETTI ═══════════════ */
+function spawnConfetti() {
+  var wrap = document.getElementById('confetti');
+  wrap.innerHTML = '';
+  var colors = ['#5BB3E0','#D96BA8','#fff','#7ECEF4','#E87DB5'];
+  for(var i=0;i<60;i++){
+    var el = document.createElement('div');
+    el.className = 'pt';
+    var sz = 5 + Math.random()*8;
+    el.style.cssText =
+      '--tx:'+((Math.random()-.5)*70)+'vw;'+
+      '--d:'+(1.2+Math.random()*1.8)+'s;'+
+      '--delay:'+Math.random()*.8+'s;'+
+      'left:'+(5+Math.random()*90)+'%;top:0;'+
+      'width:'+sz+'px;height:'+sz+'px;'+
+      'background:'+colors[i%colors.length]+';';
+    wrap.appendChild(el);
+  }
+}
+</script>
+</body>
+</html>
