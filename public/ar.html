@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>AR — Color Escape × Studio La Milie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      overflow: hidden;
+      background: #000;
+      font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* MindAR injects canvas + video here */
+    #ar-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* ── UI overlay ─────────────────────────────── */
+    #ui-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: env(safe-area-inset-top, 40px) 20px env(safe-area-inset-bottom, 40px);
+      padding-top: max(env(safe-area-inset-top), 40px);
+      padding-bottom: max(env(safe-area-inset-bottom), 40px);
+    }
+
+    /* Top bar */
+    #top-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #game-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+    }
+
+    #game-title-badge {
+      background: linear-gradient(135deg, #5BB3E0, #D96BA8);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 6px 18px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    #instructions-box {
+      background: rgba(0, 0, 0, 0.55);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      max-width: 280px;
+      line-height: 1.5;
+      transition: opacity 0.5s ease;
+    }
+
+    /* Scan viewfinder */
+    #viewfinder {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      flex-shrink: 0;
+    }
+
+    .corner {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+    }
+    .c-tl { top: 0; left: 0;  border-top: 3px solid #7ECEF4; border-left:  3px solid #7ECEF4; border-radius: 4px 0 0 0; }
+    .c-tr { top: 0; right: 0; border-top: 3px solid #E87DB5; border-right: 3px solid #E87DB5; border-radius: 0 4px 0 0; }
+    .c-bl { bottom: 0; left: 0;  border-bottom: 3px solid #E87DB5; border-left:  3px solid #E87DB5; border-radius: 0 0 0 4px; }
+    .c-br { bottom: 0; right: 0; border-bottom: 3px solid #7ECEF4; border-right: 3px solid #7ECEF4; border-radius: 0 0 4px 0; }
+
+    @keyframes scan {
+      0%   { top: 0;    opacity: 1; }
+      90%  { top: 100%; opacity: 0.6; }
+      100% { top: 100%; opacity: 0; }
+    }
+    #scan-line {
+      position: absolute;
+      left: 8px; right: 8px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #7ECEF4 40%, #E87DB5 60%, transparent);
+      box-shadow: 0 0 10px rgba(126, 206, 244, 0.9);
+      animation: scan 2s ease-in-out infinite;
+      border-radius: 2px;
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.6; }
+      50%       { transform: translate(-50%,-50%) scale(1.4); opacity: 1; }
+    }
+    #dot {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #7ECEF4;
+      box-shadow: 0 0 10px #7ECEF4;
+      animation: dot-pulse 2s ease-in-out infinite;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+    #dot.locked {
+      background: #4cff91;
+      box-shadow: 0 0 14px #4cff91;
+      animation: none;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Bottom bar */
+    #bottom-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      pointer-events: all;
+    }
+
+    @keyframes btn-pulse {
+      0%, 100% { transform: scale(1);    box-shadow: 0 4px 24px rgba(91, 179, 224, 0.5); }
+      50%       { transform: scale(1.04); box-shadow: 0 6px 36px rgba(217, 107, 168, 0.7); }
+    }
+    #found-btn {
+      display: none;
+      padding: 16px 48px;
+      font-family: 'Poppins', Arial, sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #5BB3E0, #D96BA8);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      animation: btn-pulse 1.8s ease-in-out infinite;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #manual-link {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      pointer-events: all;
+    }
+    #manual-link:hover { color: rgba(255,255,255,0.8); }
+
+    /* Error state */
+    #error-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,0.85);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 32px;
+      text-align: center;
+      color: white;
+    }
+    #error-overlay.visible { display: flex; }
+    #error-overlay h2 { font-size: 20px; font-weight: 700; }
+    #error-overlay p  { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6; }
+    #error-overlay button {
+      margin-top: 8px;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #5BB3E0, #D96BA8);
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-family: 'Poppins', Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- MindAR renders camera + 3D canvas here -->
+<div id="ar-container"></div>
+
+<!-- HUD -->
+<div id="ui-overlay">
+  <div id="top-bar">
+    <div id="game-label">Color Escape</div>
+    <div id="game-title-badge">Mission 5 / 15</div>
+    <div id="instructions-box">
+      📷 Pointez votre caméra vers<br />le logo <strong>Studio La Milie</strong>
+    </div>
+  </div>
+
+  <div id="viewfinder">
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+    <div id="scan-line"></div>
+    <div id="dot"></div>
+  </div>
+
+  <div id="bottom-bar">
+    <button id="found-btn" onclick="confirmCode()">✓ J'ai le code !</button>
+    <div id="manual-link" onclick="manualFallback()">Impossible de scanner ?</div>
+  </div>
+</div>
+
+<!-- Error overlay (shown if .mind file missing or camera denied) -->
+<div id="error-overlay">
+  <h2>⚠️ Caméra inaccessible</h2>
+  <p>Autorisez l'accès à la caméra dans les paramètres de votre navigateur, puis rechargez la page.</p>
+  <button onclick="location.reload()">Réessayer</button>
+  <div id="manual-link-error" onclick="manualFallback()" style="font-size:13px;color:rgba(255,255,255,0.5);cursor:pointer;text-decoration:underline;margin-top:4px;">
+    Entrer le code manuellement
+  </div>
+</div>
+
+<!-- MindAR + Three.js (bundled together) -->
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+
+<script>
+  'use strict';
+
+  const { MindARThree } = window.MINDAR.IMAGE;
+  const THREE = window.THREE;
+
+  // ── Brand colors ──────────────────────────────────────────
+  const BLUE  = '#5BB3E0';
+  const PINK  = '#D96BA8';
+  const WHITE = '#ffffff';
+
+  // ── Build the "473" code card canvas texture ──────────────
+  function buildCodeCardCanvas(code) {
+    const W = 512, H = 256;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+
+    // Helper: rounded rectangle path
+    function rrect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // Outer card — gradient fill
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0, '#4AAAD8');
+    bgGrad.addColorStop(1, '#CC5FA0');
+    rrect(0, 0, W, H, 36);
+    ctx.fillStyle = bgGrad;
+    ctx.fill();
+
+    // Glossy top-half sheen
+    const sheen = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    sheen.addColorStop(0,   'rgba(255,255,255,0.18)');
+    sheen.addColorStop(1,   'rgba(255,255,255,0)');
+    rrect(2, 2, W - 4, H * 0.55, 34);
+    ctx.fillStyle = sheen;
+    ctx.fill();
+
+    // White inner border
+    rrect(5, 5, W - 10, H - 10, 32);
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // "CODE SECRET" label
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.font = '700 24px Poppins, Arial';
+    ctx.textAlign = 'center';
+    ctx.letterSpacing = '6px';
+    ctx.fillText('CODE SECRET', W / 2, 52);
+
+    // Subtle divider
+    const divGrad = ctx.createLinearGradient(60, 0, W - 60, 0);
+    divGrad.addColorStop(0,   'transparent');
+    divGrad.addColorStop(0.5, 'rgba(255,255,255,0.4)');
+    divGrad.addColorStop(1,   'transparent');
+    ctx.beginPath();
+    ctx.moveTo(60, 68); ctx.lineTo(W - 60, 68);
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Main code number — drop shadow + bold
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = WHITE;
+    ctx.font = '800 148px Poppins, Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(code, W / 2, H / 2 + 22);
+    ctx.restore();
+
+    // Small star accents
+    function star(cx, cy, size) {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+        const r2 = i % 2 === 0 ? size : size * 0.4;
+        ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+    star(36, 36, 8); star(W - 36, 36, 6);
+    star(36, H - 36, 6); star(W - 36, H - 36, 8);
+
+    return cv;
+  }
+
+  // ── MindAR initialisation ─────────────────────────────────
+  const mindarThree = new MindARThree({
+    container: document.getElementById('ar-container'),
+    imageTargetSrc: '/targets.mind',
+    maxTrack: 1,
+    uiLoading: 'no',
+    uiScanning: 'no',
+    uiError: 'no',
+  });
+
+  const { renderer, scene, camera } = mindarThree;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(0.5, 1, 2);
+  scene.add(dirLight);
+
+  // Point lights for colour accent
+  const blueLight = new THREE.PointLight(0x5BB3E0, 1.5, 1.5);
+  blueLight.position.set(-0.3, 0.3, 0.3);
+  scene.add(blueLight);
+  const pinkLight = new THREE.PointLight(0xD96BA8, 1.2, 1.5);
+  pinkLight.position.set(0.3, -0.2, 0.3);
+  scene.add(pinkLight);
+
+  // ── Code card mesh ────────────────────────────────────────
+  const codeTexture = new THREE.CanvasTexture(buildCodeCardCanvas('473'));
+  codeTexture.needsUpdate = true;
+
+  const CARD_W = 0.50, CARD_H = 0.25, CARD_D = 0.022;
+  const cardGeo = new THREE.BoxGeometry(CARD_W, CARD_H, CARD_D);
+
+  const edgeMat = new THREE.MeshPhongMaterial({ color: 0x4AAAD8 });
+  const backMat = new THREE.MeshPhongMaterial({ color: 0xCC5FA0 });
+  const frontMat = new THREE.MeshPhongMaterial({ map: codeTexture });
+
+  // BoxGeometry face order: +x, -x, +y, -y, +z (front), -z (back)
+  const cardMesh = new THREE.Mesh(cardGeo, [
+    edgeMat, edgeMat,   // sides
+    edgeMat, edgeMat,   // top/bottom
+    frontMat,           // front (faces camera)
+    backMat,            // back
+  ]);
+  cardMesh.position.set(0, 0.20, 0);
+  cardMesh.scale.set(0, 0, 0); // start invisible; scale in on detect
+
+  // ── Particles ─────────────────────────────────────────────
+  const particleCount = 16;
+  const pGeo = new THREE.SphereGeometry(0.007, 4, 4);
+  const pMats = [
+    new THREE.MeshBasicMaterial({ color: 0x7ECEF4 }),
+    new THREE.MeshBasicMaterial({ color: 0xE87DB5 }),
+    new THREE.MeshBasicMaterial({ color: 0xffffff }),
+  ];
+
+  const particles = Array.from({ length: particleCount }, (_, i) => {
+    const mesh = new THREE.Mesh(pGeo, pMats[i % 3]);
+    mesh.visible = false;
+    mesh.userData = {
+      phaseOffset: (i / particleCount) * Math.PI * 2,
+      radius:      0.26 + Math.random() * 0.14,
+      speed:       0.45 + Math.random() * 0.55,
+      yBase:       0.20 + Math.random() * 0.18,
+      yAmp:        0.025 + Math.random() * 0.025,
+    };
+    return mesh;
+  });
+
+  // ── Anchor ────────────────────────────────────────────────
+  const anchor = mindarThree.addAnchor(0);
+  anchor.group.add(cardMesh);
+  particles.forEach(p => anchor.group.add(p));
+
+  // ── State ─────────────────────────────────────────────────
+  let trackStart  = null;
+  let btnShown    = false;
+
+  anchor.onTargetFound = () => {
+    trackStart = Date.now();
+    document.getElementById('instructions-box').textContent = '🎯 Tenez la caméra immobile…';
+    document.getElementById('dot').classList.add('locked');
+  };
+
+  anchor.onTargetLost = () => {
+    if (!btnShown) {
+      trackStart = null;
+      cardMesh.scale.set(0, 0, 0);
+      particles.forEach(p => { p.visible = false; });
+      document.getElementById('instructions-box').innerHTML =
+        '📷 Pointez votre caméra vers<br />le logo <strong>Studio La Milie</strong>';
+      document.getElementById('dot').classList.remove('locked');
+    }
+  };
+
+  // ── Render loop ───────────────────────────────────────────
+  renderer.setAnimationLoop(() => {
+    const t = Date.now();
+
+    if (trackStart !== null) {
+      const elapsed = t - trackStart;
+
+      // Ease-out cubic scale-in (0 → 1 over 700 ms)
+      const p = Math.min(1, elapsed / 700);
+      const scale = 1 - Math.pow(1 - p, 3);
+      cardMesh.scale.set(scale, scale, scale);
+
+      // Gentle float + sway
+      cardMesh.position.y       = 0.20 + Math.sin(t * 0.0019) * 0.013;
+      cardMesh.rotation.y       = Math.sin(t * 0.0009) * 0.09;
+      cardMesh.rotation.x       = Math.sin(t * 0.0013) * 0.04;
+
+      // Particles appear after card is mostly in
+      if (elapsed > 500) {
+        particles.forEach(p => {
+          p.visible = true;
+          const ud = p.userData;
+          const angle = t * 0.001 * ud.speed + ud.phaseOffset;
+          p.position.x = Math.cos(angle) * ud.radius;
+          p.position.z = Math.sin(angle) * ud.radius;
+          p.position.y = ud.yBase + Math.sin(t * 0.0025 + ud.phaseOffset) * ud.yAmp;
+          const s = 0.6 + 0.4 * Math.abs(Math.sin(t * 0.002 + ud.phaseOffset));
+          p.scale.setScalar(s);
+        });
+      }
+
+      // Reveal button after 2.5 s of stable tracking
+      if (elapsed > 2500 && !btnShown) {
+        btnShown = true;
+        document.getElementById('found-btn').style.display = 'block';
+        document.getElementById('instructions-box').style.opacity = '0';
+      }
+    }
+
+    renderer.render(scene, camera);
+  });
+
+  // ── Start AR ──────────────────────────────────────────────
+  (async () => {
+    try {
+      await mindarThree.start();
+    } catch (err) {
+      console.error('MindAR error:', err);
+      document.getElementById('error-overlay').classList.add('visible');
+    }
+  })();
+
+  window.addEventListener('beforeunload', () => {
+    try { mindarThree.stop(); } catch (_) {}
+  });
+
+  // ── Actions ───────────────────────────────────────────────
+  function confirmCode() {
+    try { mindarThree.stop(); } catch (_) {}
+    localStorage.setItem('ce_code_mission5', '473');
+    localStorage.setItem('ce_code_mission5_ts', Date.now().toString());
+    // Return to the game — completed state
+    window.location.href = '/?mission=5&status=complete';
+  }
+
+  function manualFallback() {
+    try { mindarThree.stop(); } catch (_) {}
+    const entered = prompt('Entrez le code que vous avez trouvé :');
+    if (entered === null) {
+      // user cancelled — restart AR
+      location.reload();
+      return;
+    }
+    if (entered.trim() === '473') {
+      localStorage.setItem('ce_code_mission5', '473');
+      localStorage.setItem('ce_code_mission5_ts', Date.now().toString());
+      window.location.href = '/?mission=5&status=complete';
+    } else {
+      alert('Code incorrect — cherchez encore ! 🔍');
+      location.reload();
+    }
+  }
+</script>
+
+</body>
+</html>
