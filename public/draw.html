@@ -270,14 +270,14 @@ function analyse() {
   if(perim < 100) return;
 
   var gap = Math.hypot(all[0].x-all[all.length-1].x, all[0].y-all[all.length-1].y);
-  if(gap/perim > 0.22) return;
+  if(gap/perim > 0.32) return; // allow imperfectly closed triangles
 
-  // Generous epsilon so slight wobbly sides merge into one straight line
-  var eps    = Math.max(20, perim*0.08);
+  // Large epsilon so wobbly sides merge into straight lines
+  var eps    = Math.max(25, perim*0.10);
   var simple = rdp(all, eps);
   var n      = simple.length;
-  // Strictly 3 corners — tolerance via the larger epsilon above
-  if(n !== 3) return;
+  // 3 corners = perfect; 4 = triangle drawn without perfectly closing (closing segment adds a point)
+  if(n < 3 || n > 4) return;
 
   validated = true;
   triggerSuccess();
