@@ -104,30 +104,8 @@
   <div id="err-manual" onclick="manualFallback()">Entrer le code manuellement</div>
 </div>
 
-<!-- MindAR: try jsDelivr first, fall back to unpkg -->
-<script>
-window._mindARReady = false;
-window._mindARFailed = 0;
-function _loadMindAR(src) {
-  var s = document.createElement('script');
-  s.src = src;
-  s.onload = function() { window._mindARReady = true; };
-  s.onerror = function() {
-    window._mindARFailed++;
-    if (window._mindARFailed === 1) {
-      // jsDelivr failed — try unpkg
-      _loadMindAR('https://unpkg.com/mind-ar@1.2.5/dist/mindar-image-three.prod.js');
-    } else {
-      document.getElementById('err-title').textContent = '⚠️ Chargement échoué';
-      document.getElementById('err-msg').textContent = 'La librairie AR n\'a pas pu se charger. Vérifiez votre connexion internet puis réessayez.';
-      document.getElementById('err').classList.add('on');
-      document.getElementById('splash').style.display = 'none';
-    }
-  };
-  document.head.appendChild(s);
-}
-_loadMindAR('https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js');
-</script>
+<!-- MindAR self-hosted — no CDN dependency -->
+<script src="/mindar-image-three.prod.js"></script>
 <script>
 'use strict';
 
