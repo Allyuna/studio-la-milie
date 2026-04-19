@@ -179,23 +179,23 @@ window.startAR = async function() {
     });
     const {renderer, scene, camera} = mindarThree;
     renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = window.THREE.NoToneMapping; // prevent colour distortion
 
-    // Lights
-    scene.add(new window.THREE.AmbientLight(0xffffff, 1.0));
-    const dl = new window.THREE.DirectionalLight(0xffffff, 1.1);
-    dl.position.set(.5,1,2); scene.add(dl);
+    // Minimal lighting (only needed for edge sides)
+    scene.add(new window.THREE.AmbientLight(0xffffff, 1.5));
 
-    // Card mesh
+    // Card mesh — MeshBasicMaterial on front so texture renders exactly as drawn
     const tex = new window.THREE.CanvasTexture(buildCard('473'));
+    tex.encoding = window.THREE.sRGBEncoding;
     const card = new window.THREE.Mesh(
       new window.THREE.BoxGeometry(.50,.25,.022),
       [
-        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-        new window.THREE.MeshPhongMaterial({color:0x4AAAD8}),
-        new window.THREE.MeshPhongMaterial({map:tex}),
-        new window.THREE.MeshPhongMaterial({color:0xCC5FA0}),
+        new window.THREE.MeshBasicMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshBasicMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshBasicMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshBasicMaterial({color:0x4AAAD8}),
+        new window.THREE.MeshBasicMaterial({map:tex}),  // unlit — shows canvas exactly
+        new window.THREE.MeshBasicMaterial({color:0xCC5FA0}),
       ]
     );
     card.position.set(0,.20,0); card.scale.set(0,0,0);
