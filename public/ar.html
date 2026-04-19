@@ -244,15 +244,28 @@
 <div id="loading-overlay" style="
   position:fixed;inset:0;z-index:400;
   background:#0d0d1a;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
   font-family:'Poppins',Arial,sans-serif;color:white;text-align:center;padding:32px;
 ">
-  <div style="width:48px;height:48px;border:3px solid rgba(255,255,255,0.15);border-top-color:#5BB3E0;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
-  <p id="loading-text" style="font-size:14px;color:rgba(255,255,255,0.6);">Chargement de la caméra…</p>
-  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-</div>
-
-  <!-- Error overlay (shown if .mind file missing or camera denied) -->
+  <img src="/logo.jpg" alt="Studio La Milie" style="width:90px;height:90px;object-fit:contain;border-radius:18px;background:white;padding:8px;" />
+  <div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:8px;">Color Escape — Mission 5</div>
+    <div style="font-size:20px;font-weight:800;background:linear-gradient(135deg,#7ECEF4,#E87DB5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Le Code Secret</div>
+  </div>
+  <p id="loading-text" style="font-size:14px;color:rgba(255,255,255,0.55);max-width:260px;line-height:1.6;">
+    Pointez votre caméra vers le logo Studio La Milie pour révéler le code secret.
+  </p>
+  <button id="start-btn" onclick="startAR()" style="
+    padding:16px 48px;
+    background:linear-gradient(135deg,#5BB3E0,#D96BA8);
+    color:white;font-family:'Poppins',Arial,sans-serif;
+    font-size:17px;font-weight:700;border:none;border-radius:50px;
+    cursor:pointer;box-shadow:0 4px 24px rgba(91,179,224,0.4);
+    -webkit-tap-highlight-color:transparent;
+  ">📷 Lancer la caméra</button>
+  <div id="loading-spinner" style="display:none;">
+    <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,0.15);border-top-color:#5BB3E0;border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+  </div>
 <div id="error-overlay">
   <h2 id="error-title">⚠️ Caméra inaccessible</h2>
   <p id="error-msg">Autorisez l'accès à la caméra dans les paramètres de votre navigateur, puis rechargez la page.</p>
@@ -504,9 +517,13 @@
     renderer.render(scene, camera);
   });
 
-  // ── Start AR ──────────────────────────────────────────────
-  (async () => {
-    // First check the .mind file exists before asking for camera
+  // ── Start AR (triggered by button tap — required by Safari) ──
+  async function startAR() {
+    document.getElementById('start-btn').style.display = 'none';
+    document.getElementById('loading-spinner').style.display = 'block';
+    document.getElementById('loading-text').textContent = 'Ouverture de la caméra…';
+
+    // Check .mind file exists
     try {
       const res = await fetch('/targets.mind', { method: 'HEAD' });
       if (!res.ok) throw new Error('targets.mind not found');
@@ -514,7 +531,7 @@
       document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('error-title').textContent = '⚙️ Marqueur non configuré';
       document.getElementById('error-msg').textContent =
-        'Le fichier de reconnaissance (targets.mind) n\'est pas encore en place. Revenez quand le jeu sera lancé !';
+        'Le fichier de reconnaissance n\'est pas encore en place. Revenez quand le jeu sera lancé !';
       document.getElementById('error-overlay').classList.add('visible');
       return;
     }
@@ -527,7 +544,7 @@
       document.getElementById('loading-overlay').style.display = 'none';
       document.getElementById('error-overlay').classList.add('visible');
     }
-  })();
+  }
 
   window.addEventListener('beforeunload', () => {
     try { mindarThree.stop(); } catch (_) {}
