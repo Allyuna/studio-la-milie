@@ -20,6 +20,10 @@ const translations = {
     back:            '← Retour',
     lang_btn:        'EN',
     ar_type:         'Mission AR',
+    draw_label:      'Mission 6 sur 15',
+    draw_title:      'La Forme Secrète',
+    draw_badge:      'Mission Dessin',
+    draw_desc:       'Observez la chorée et reproduisez la forme que vous avez vue.',
   },
   en: {
     home_title:      'Color Escape',
@@ -36,6 +40,10 @@ const translations = {
     back:            '← Back',
     lang_btn:        'FR',
     ar_type:         'AR Mission',
+    draw_label:      'Mission 6 of 15',
+    draw_title:      'The Secret Shape',
+    draw_badge:      'Drawing Mission',
+    draw_desc:       'Watch the choreography and reproduce the shape you saw.',
   },
 }
 

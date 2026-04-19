@@ -7,8 +7,25 @@ export default function Home() {
   const t = useT()
   const navigate = useNavigate()
 
-  // Check if AR mission was already completed
-  const arDone = !!localStorage.getItem('ce_code_mission5')
+  const missions = [
+    {
+      badge: t.ar_type,
+      label: t.mission_label,
+      title: t.mission_title,
+      href:  '/ar.html',
+    },
+    {
+      badge: t.draw_badge,
+      label: t.draw_label,
+      title: t.draw_title,
+      href:  '/draw.html',
+    },
+  ]
+
+  function goTo(href) {
+    // Hard navigate so the page always reloads fresh (resets all progress)
+    window.location.href = href
+  }
 
   return (
     <div className={styles.page}>
@@ -32,29 +49,24 @@ export default function Home() {
         <p className={styles.desc}>{t.home_desc}</p>
       </header>
 
-      {/* Mission card */}
+      {/* Mission cards */}
       <main className={styles.main}>
-        <div
-          className={styles.missionCard + (arDone ? ' ' + styles.done : '')}
-          onClick={() => navigate('/mission/ar')}
-          role="button"
-          tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && navigate('/mission/ar')}
-        >
-          <div className={styles.missionBadge}>{t.ar_type}</div>
-          <div className={styles.missionNum}>{t.mission_label}</div>
-          <h2 className={styles.missionTitle}>{t.mission_title}</h2>
-          {arDone && <div className={styles.doneTag}>✓ {t.mission_done}</div>}
-          <div className={styles.missionArrow}>→</div>
-        </div>
+        {missions.map((m, i) => (
+          <div
+            key={i}
+            className={styles.missionCard}
+            onClick={() => goTo(m.href)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && goTo(m.href)}
+          >
+            <div className={styles.missionBadge}>{m.badge}</div>
+            <div className={styles.missionNum}>{m.label}</div>
+            <h2 className={styles.missionTitle}>{m.title}</h2>
+            <div className={styles.missionArrow}>→</div>
+          </div>
+        ))}
       </main>
-
-      {/* Start CTA */}
-      <footer className={styles.footer}>
-        <button className="btn-primary" onClick={() => navigate('/mission/ar')}>
-          {t.home_cta}
-        </button>
-      </footer>
 
     </div>
   )

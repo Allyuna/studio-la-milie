@@ -184,11 +184,15 @@ function getPos(e) {
 /* == INCREMENTAL DRAW (instant feedback) == */
 function seg(a, b) {
   ctx.save();
-  ctx.strokeStyle = '#5BB3E0';
+  // Gradient from blue to pink along x axis
+  var grd = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  grd.addColorStop(0,   '#5BB3E0');
+  grd.addColorStop(1,   '#D96BA8');
+  ctx.strokeStyle = grd;
   ctx.lineWidth   = 6;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
-  ctx.shadowColor = '#5BB3E0';
+  ctx.shadowColor = '#9B7EC8';
   ctx.shadowBlur  = 8;
   ctx.beginPath();
   ctx.moveTo(a.x, a.y);
@@ -276,8 +280,17 @@ function analyse() {
   var eps    = Math.max(25, perim*0.10);
   var simple = rdp(all, eps);
   var n      = simple.length;
-  // 3 corners = perfect; 4 = triangle drawn without perfectly closing (closing segment adds a point)
+  // 3 corners = perfect; 4 = triangle drawn without perfectly closing
   if(n < 3 || n > 4) return;
+
+  // Anti-scribble: measure how closely the raw path follows the simplified shape.
+  // For a real triangle the user traces ~1x-1.5x the ideal perimeter.
+  // For a scribble the path is much longer relative to the simplified shape.
+  var simPerim = 0;
+  for(var i=1;i<simple.length;i++) simPerim += Math.hypot(simple[i].x-simple[i-1].x, simple[i].y-simple[i-1].y);
+  // Close the simplified polygon
+  simPerim += Math.hypot(simple[0].x-simple[simple.length-1].x, simple[0].y-simple[simple.length-1].y);
+  if(perim / simPerim > 1.8) return; // scribble: raw path is much longer than the ideal triangle
 
   validated = true;
   triggerSuccess();
