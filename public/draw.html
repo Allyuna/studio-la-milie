@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>Mission – Dessine la forme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;background:#0d0d1a;font-family:'Poppins',Arial,sans-serif}
+
+    #canvas{
+      position:fixed;inset:0;width:100%;height:100%;
+      touch-action:none; /* prevent scroll while drawing */
+    }
+
+    /* ── HUD ─────────────────────────────────────────── */
+    #hud{
+      position:fixed;top:0;left:0;right:0;
+      padding:20px 20px 0;
+      display:flex;flex-direction:column;align-items:center;gap:6px;
+      pointer-events:none;z-index:10;
+    }
+    #hud h1{
+      font-size:clamp(16px,4vw,22px);color:#fff;letter-spacing:.08em;
+      text-shadow:0 2px 12px rgba(0,0,0,.8);text-align:center;
+    }
+    #hud p{
+      font-size:clamp(12px,3vw,15px);color:rgba(255,255,255,.55);
+      text-align:center;
+    }
+
+    /* ── Shape hint (ghost triangle) ─────────────────── */
+    #hint{
+      position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+      opacity:.18;pointer-events:none;z-index:5;
+    }
+
+    /* ── Clear button ────────────────────────────────── */
+    #btn-clear{
+      position:fixed;bottom:28px;right:24px;
+      background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);
+      color:#fff;font-family:'Poppins',Arial,sans-serif;font-size:14px;font-weight:700;
+      padding:10px 20px;border-radius:30px;cursor:pointer;z-index:20;
+      transition:background .2s;
+    }
+    #btn-clear:active{background:rgba(255,255,255,.18)}
+
+    /* ── Feedback flash ─────────────────────────────── */
+    #flash{
+      position:fixed;inset:0;background:rgba(255,255,255,0);
+      pointer-events:none;z-index:50;transition:background .12s;
+    }
+    #flash.on{background:rgba(255,255,255,.35)}
+
+    /* ── Success overlay ─────────────────────────────── */
+    #success{
+      position:fixed;inset:0;
+      background:#0d0d1a;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:18px;z-index:100;
+      opacity:0;pointer-events:none;
+      transition:opacity .5s;
+    }
+    #success.show{opacity:1;pointer-events:all}
+
+    #success-icon{font-size:80px;animation:pop .5s cubic-bezier(.34,1.56,.64,1) both}
+    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+
+    #success h2{
+      font-size:clamp(22px,6vw,36px);font-weight:800;
+      background:linear-gradient(135deg,#5BB3E0,#D96BA8);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;text-align:center;letter-spacing:.06em;
+    }
+    #success p{
+      font-size:clamp(13px,3.5vw,17px);color:rgba(255,255,255,.6);
+      text-align:center;max-width:280px;line-height:1.5;
+    }
+
+    /* success canvas thumbnail */
+    #success-canvas-wrap{
+      width:min(280px,80vw);height:min(280px,80vw);
+      border-radius:20px;overflow:hidden;
+      border:2px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.04);
+    }
+    #success-canvas{width:100%;height:100%}
+
+    /* particles */
+    #particles{position:fixed;inset:0;pointer-events:none;z-index:99;overflow:hidden}
+    .pt{
+      position:absolute;width:8px;height:8px;border-radius:50%;
+      animation:fall var(--d) var(--delay) ease-in both;
+    }
+    @keyframes fall{
+      0%  {transform:translate(var(--x),calc(var(--y) - 60vh)) rotate(0deg);opacity:1}
+      100%{transform:translate(var(--x), 110vh) rotate(720deg);opacity:0}
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="hud">
+  <h1>✦ DESSINE LA FORME ✦</h1>
+  <p>Trace la figure observée pendant la chorée</p>
+</div>
+
+<!-- ghost hint: small triangle SVG -->
+<svg id="hint" width="90" height="80" viewBox="0 0 90 80">
+  <polygon points="45,4 86,76 4,76"
+    fill="none" stroke="white" stroke-width="3" stroke-linejoin="round"/>
+</svg>
+
+<button id="btn-clear">Recommencer</button>
+<div id="flash"></div>
+
+<!-- Success overlay -->
+<div id="success">
+  <div id="particles"></div>
+  <div id="success-icon">✦</div>
+  <h2>MISSION ACCOMPLIE</h2>
+  <div id="success-canvas-wrap">
+    <canvas id="success-canvas"></canvas>
+  </div>
+  <p>Tu as tracé la bonne forme !</p>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════ */
+const CFG = {
+  strokeColor:   '#5BB3E0',       // drawing stroke
+  strokeWidth:   5,
+  rdpEpsilon:    22,              // RDP simplification aggressiveness (px)
+  closedThreshold: 0.15,         // start↔end distance / perimeter to count as closed
+  cornerCount:   { min: 3, max: 4 }, // simplified points (3 = perfect triangle)
+  shakeMs:       400,            // debounce after lift to wait before analysing
+};
+
+/* ═══════════════════════════════════════════════════
+   CANVAS SETUP
+═══════════════════════════════════════════════════ */
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  redraw();
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ═══════════════════════════════════════════════════
+   DRAWING STATE
+═══════════════════════════════════════════════════ */
+let paths    = [];   // all completed strokes: [[{x,y},...], ...]
+let current  = null; // current in-progress stroke
+let timer    = null;
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  if (e.touches) {
+    const t = e.touches[0] || e.changedTouches[0];
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function startDraw(e) {
+  e.preventDefault();
+  clearTimeout(timer);
+  const p = getPos(e);
+  current = [p];
+}
+
+function moveDraw(e) {
+  e.preventDefault();
+  if (!current) return;
+  const p = getPos(e);
+  const last = current[current.length - 1];
+  if (Math.hypot(p.x - last.x, p.y - last.y) < 2) return; // skip tiny jitter
+  current.push(p);
+  redraw();
+}
+
+function endDraw(e) {
+  e.preventDefault();
+  if (!current || current.length < 4) { current = null; return; }
+  paths.push(current);
+  current = null;
+  redraw();
+  // slight delay so the user can finish the shape before we check
+  clearTimeout(timer);
+  timer = setTimeout(analyseShape, CFG.shakeMs);
+}
+
+canvas.addEventListener('pointerdown',  startDraw, { passive: false });
+canvas.addEventListener('pointermove',  moveDraw,  { passive: false });
+canvas.addEventListener('pointerup',    endDraw,   { passive: false });
+canvas.addEventListener('pointercancel',endDraw,   { passive: false });
+
+/* ═══════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════ */
+function drawStroke(points, alpha) {
+  if (points.length < 2) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = CFG.strokeColor;
+  ctx.lineWidth   = CFG.strokeWidth;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  ctx.shadowColor = '#5BB3E0';
+  ctx.shadowBlur  = 12;
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  paths.forEach(pts => drawStroke(pts, 0.9));
+  if (current) drawStroke(current, 0.9);
+}
+
+/* ═══════════════════════════════════════════════════
+   RAMER-DOUGLAS-PEUCKER simplification
+═══════════════════════════════════════════════════ */
+function rdp(pts, eps) {
+  if (pts.length <= 2) return pts.slice();
+  let maxD = 0, idx = 0;
+  const end = pts.length - 1;
+  for (let i = 1; i < end; i++) {
+    const d = perpDist(pts[i], pts[0], pts[end]);
+    if (d > maxD) { maxD = d; idx = i; }
+  }
+  if (maxD < eps) return [pts[0], pts[end]];
+  return [...rdp(pts.slice(0, idx + 1), eps), ...rdp(pts.slice(idx), eps).slice(1)];
+}
+
+function perpDist(pt, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  if (dx === 0 && dy === 0) return Math.hypot(pt.x - a.x, pt.y - a.y);
+  return Math.abs(dy * pt.x - dx * pt.y + b.x * a.y - b.y * a.x) / Math.hypot(dx, dy);
+}
+
+/* ═══════════════════════════════════════════════════
+   TRIANGLE DETECTION
+═══════════════════════════════════════════════════ */
+function allPoints() {
+  // merge all strokes into one flat array
+  return paths.reduce((acc, p) => acc.concat(p), []);
+}
+
+function perimeter(pts) {
+  let s = 0;
+  for (let i = 1; i < pts.length; i++) s += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+  return s;
+}
+
+function analyseShape() {
+  const pts = allPoints();
+  if (pts.length < 6) return;
+
+  // 1. Simplify with RDP
+  const simple = rdp(pts, CFG.rdpEpsilon);
+
+  // 2. Check corner count (3 or 4 after simplification)
+  const n = simple.length;
+  if (n < CFG.cornerCount.min || n > CFG.cornerCount.max) return;
+
+  // 3. Check closed: distance between first and last point vs. total perimeter
+  const first = pts[0], last = pts[pts.length - 1];
+  const dist  = Math.hypot(last.x - first.x, last.y - first.y);
+  const perim = perimeter(pts);
+  if (perim < 60) return; // too small
+  if (dist / perim > CFG.closedThreshold) return; // not closed enough
+
+  // ✓ It's a triangle!
+  flashScreen();
+  setTimeout(showSuccess, 350);
+}
+
+/* ═══════════════════════════════════════════════════
+   FEEDBACK
+═══════════════════════════════════════════════════ */
+function flashScreen() {
+  const f = document.getElementById('flash');
+  f.classList.add('on');
+  setTimeout(() => f.classList.remove('on'), 200);
+}
+
+function showSuccess() {
+  spawnParticles();
+  renderSuccessThumb();
+  document.getElementById('success').classList.add('show');
+}
+
+function renderSuccessThumb() {
+  const sc   = document.getElementById('success-canvas');
+  const wrap = document.getElementById('success-canvas-wrap');
+  const size = wrap.offsetWidth;
+  sc.width   = size;
+  sc.height  = size;
+  const sCtx = sc.getContext('2d');
+
+  // Find bounding box of drawing
+  const pts = allPoints();
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  pts.forEach(p => { minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); });
+  const pad = 30;
+  const dw  = maxX - minX || 1, dh = maxY - minY || 1;
+  const scale = Math.min((size - pad*2) / dw, (size - pad*2) / dh);
+  const ox = (size - dw * scale) / 2 - minX * scale;
+  const oy = (size - dh * scale) / 2 - minY * scale;
+
+  function tp(p) { return { x: p.x * scale + ox, y: p.y * scale + oy }; }
+
+  paths.forEach(stroke => {
+    if (stroke.length < 2) return;
+    sCtx.save();
+    sCtx.strokeStyle = CFG.strokeColor;
+    sCtx.lineWidth   = 4;
+    sCtx.lineCap     = 'round';
+    sCtx.lineJoin    = 'round';
+    sCtx.shadowColor = '#5BB3E0';
+    sCtx.shadowBlur  = 14;
+    sCtx.beginPath();
+    const s0 = tp(stroke[0]);
+    sCtx.moveTo(s0.x, s0.y);
+    stroke.slice(1).forEach(p => { const q = tp(p); sCtx.lineTo(q.x, q.y); });
+    sCtx.stroke();
+    sCtx.restore();
+  });
+}
+
+function spawnParticles() {
+  const container = document.getElementById('particles');
+  container.innerHTML = '';
+  const colors = ['#5BB3E0','#D96BA8','#ffffff','#7ECEF4','#E87DB5'];
+  for (let i = 0; i < 40; i++) {
+    const pt = document.createElement('div');
+    pt.className = 'pt';
+    pt.style.cssText = `
+      --x:${(Math.random()-0.5)*80}vw;
+      --y:${Math.random()*40}vh;
+      --d:${1.2 + Math.random()*1.6}s;
+      --delay:${Math.random()*0.6}s;
+      left:${10+Math.random()*80}%;
+      top:-10px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*6}px;
+      height:${6+Math.random()*6}px;
+    `;
+    container.appendChild(pt);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   CLEAR BUTTON
+═══════════════════════════════════════════════════ */
+document.getElementById('btn-clear').addEventListener('click', () => {
+  clearTimeout(timer);
+  paths   = [];
+  current = null;
+  redraw();
+  document.getElementById('success').classList.remove('show');
+});
+</script>
+</body>
+</html>
