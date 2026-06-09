@@ -91,6 +91,15 @@ export default function Home() {
         ))}
       </main>
 
+      {/* Discreet admin entry — low visibility for players */}
+      <button
+        className={styles.adminLink}
+        onClick={() => navigate('/admin')}
+        aria-label="Admin"
+      >
+        ⚙ admin
+      </button>
+
     </div>
   )
 }
