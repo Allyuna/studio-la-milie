@@ -131,6 +131,57 @@
 }
 .missionCard:hover .missionArrow { right: 16px; color: var(--blue-light); }
 
+/* ── Live multiplayer card ── */
+.liveSection {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.liveCard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(91,179,224,0.12), rgba(217,107,168,0.12));
+  border: 1.5px solid rgba(91,179,224,0.4);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  text-align: left;
+}
+.liveCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--blue);
+  box-shadow: 0 6px 28px rgba(91,179,224,0.3);
+}
+
+.liveBadge {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--blue-light);
+  background: rgba(91,179,224,0.15);
+  border: 1px solid rgba(91,179,224,0.3);
+  border-radius: 20px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+.liveTitle {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.liveArrow {
+  font-size: 20px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+.liveCard:hover .liveArrow { color: var(--blue-light); }
+
 .footer {
   margin-top: 32px;
   display: flex;

@@ -2,6 +2,11 @@ import { createContext, useContext, useState } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import ARGamePage from './pages/ARGamePage'
+import JoinPage from './pages/JoinPage'
+import LobbyPage from './pages/LobbyPage'
+import AdminPage from './pages/AdminPage'
+import VocalGame from './pages/VocalGame'
+import { GameProvider } from './context/GameContext'
 
 // ── i18n ──────────────────────────────────────────────────────────────────
 const translations = {
@@ -68,12 +73,18 @@ function App() {
   const [lang, setLang] = useState('fr')
   return (
     <LangContext.Provider value={{ lang, setLang }}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/"           element={<Home />}      />
-          <Route path="/mission/ar" element={<ARGamePage />} />
-        </Routes>
-      </BrowserRouter>
+      <GameProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/"            element={<Home />} />
+            <Route path="/mission/ar"  element={<ARGamePage />} />
+            <Route path="/join"        element={<JoinPage />} />
+            <Route path="/lobby"       element={<LobbyPage />} />
+            <Route path="/admin"       element={<AdminPage />} />
+            <Route path="/game/vocal"  element={<VocalGame />} />
+          </Routes>
+        </BrowserRouter>
+      </GameProvider>
     </LangContext.Provider>
   )
 }

@@ -35,7 +35,6 @@ export default function Home() {
   ]
 
   function goTo(href) {
-    // Hard navigate so the page always reloads fresh (resets all progress)
     window.location.href = href
   }
 
@@ -60,6 +59,18 @@ export default function Home() {
         <p className={styles.sub}>{t.home_sub}</p>
         <p className={styles.desc}>{t.home_desc}</p>
       </header>
+
+      {/* Live multiplayer entry point */}
+      <div className={styles.liveSection}>
+        <button
+          className={styles.liveCard}
+          onClick={() => navigate('/join')}
+        >
+          <span className={styles.liveBadge}>🎤 Live</span>
+          <span className={styles.liveTitle}>Jouer en direct</span>
+          <span className={styles.liveArrow}>→</span>
+        </button>
+      </div>
 
       {/* Mission cards */}
       <main className={styles.main}>

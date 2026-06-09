@@ -1,0 +1,430 @@
+.page {
+  min-height: 100dvh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════
+   INTRO
+════════════════════════════════════════════════ */
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 48px;
+  gap: 14px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.fredIcon {
+  font-size: 72px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.title {
+  font-size: clamp(28px, 8vw, 38px);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.25;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.65;
+}
+
+.playerTag {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 18px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+}
+.playerTag span { color: var(--text-muted); font-weight: 400; }
+
+.rules {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ruleRow {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  align-items: flex-start;
+}
+.ruleRow span { color: var(--text-muted); line-height: 1.5; }
+
+.startBtn {
+  width: 100%;
+  padding: 16px;
+  background: var(--grad);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  box-shadow: 0 6px 28px rgba(91,179,224,0.35);
+  transition: opacity 0.2s, transform 0.15s;
+  margin-top: 6px;
+}
+.startBtn:hover { opacity: 0.9; transform: translateY(-2px); }
+.startBtn:active { transform: scale(0.98); }
+
+.backBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.backBtn:hover { color: var(--text); }
+
+/* ════════════════════════════════════════════════
+   PLAYING
+════════════════════════════════════════════════ */
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  padding: 0 0 32px;
+  gap: 0;
+}
+
+/* Top bar */
+.topBar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.noteCounter {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.globalProg {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.globalProgFill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: 10px;
+  transition: width 0.4s ease;
+}
+
+.livePts {
+  font-size: 14px;
+  font-weight: 800;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+}
+
+/* Main note card */
+.noteCard {
+  margin: 28px 20px 0;
+  width: calc(100% - 40px);
+  background: var(--bg-card);
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  justify-content: center;
+}
+
+.noteCard.hit {
+  border-color: #4CD278;
+  background: rgba(76, 210, 120, 0.08);
+}
+
+.noteCard.perfect {
+  border-color: #FFD700;
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.noteName {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lyric {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.12em;
+}
+
+.hitLabel {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #4CD278;
+}
+.noteCard.perfect .hitLabel {
+  color: #FFD700;
+}
+
+/* Pitch gauge */
+.gaugeSection {
+  width: calc(100% - 40px);
+  margin: 20px 20px 0;
+}
+
+.gaugeTrack {
+  position: relative;
+  height: 24px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.hitZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 12%);
+  width: 24%;
+  background: rgba(76, 210, 120, 0.25);
+  border-left: 2px solid rgba(76, 210, 120, 0.5);
+  border-right: 2px solid rgba(76, 210, 120, 0.5);
+}
+
+.cursor {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: left 0.06s linear, background 0.12s;
+}
+
+.cursorHit {
+  background: #4CD278;
+  box-shadow: 0 0 12px rgba(76, 210, 120, 0.8);
+}
+
+.gaugeLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
+.justLabel {
+  color: #4CD278;
+  font-weight: 700;
+}
+
+/* Note duration countdown bar */
+.durationBar {
+  width: calc(100% - 40px);
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 14px 20px 0;
+}
+
+.durationFill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: 10px;
+  transition: width 0.1s linear;
+}
+
+/* Upcoming notes */
+.upcoming {
+  width: calc(100% - 40px);
+  margin: 20px 20px 0;
+}
+
+.upcomingLabel {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.upcomingList {
+  display: flex;
+  gap: 10px;
+}
+
+.upcomingItem {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.upcomingNote {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.upcomingLyric {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.06em;
+}
+
+/* ════════════════════════════════════════════════
+   DONE
+════════════════════════════════════════════════ */
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 48px;
+  gap: 16px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.doneIcon {
+  font-size: 72px;
+  animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes pop {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.doneTitle {
+  font-size: 38px;
+  font-weight: 800;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scoreCircle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+              var(--grad) border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.scoreNum {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--grad-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scoreDen {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.scoreMsg {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.scoreBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: 10px;
+  animation: growBar 1s ease-out both;
+}
+
+@keyframes growBar {
+  from { width: 0 !important; }
+}
+
+.doneActions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
