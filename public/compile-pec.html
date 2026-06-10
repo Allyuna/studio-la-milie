@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Compiler PEC.jpg → pec.mind</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#FF4DB8;font-family:'Arial Black',Impact,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{background:#fff;border:5px solid #000;border-radius:20px;box-shadow:8px 8px 0 #000;padding:32px 28px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:20px;align-items:center;text-align:center}
+    .title{font-size:24px;font-weight:900;color:#FF4DB8;text-shadow:-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000,3px 3px 0 #000;text-transform:uppercase}
+    .subtitle{font-size:13px;color:#555;font-family:Arial,sans-serif;font-weight:400;line-height:1.6}
+    .step{background:#42A8F5;border:3px solid #000;border-radius:14px;box-shadow:4px 4px 0 #000;padding:14px 18px;width:100%;text-align:left}
+    .step-num{font-size:11px;font-weight:900;color:#FFE000;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+    .step p{font-size:13px;color:#fff;font-family:Arial,sans-serif;font-weight:400;line-height:1.5;text-shadow:-1px -1px 0 rgba(0,0,0,.4),1px 1px 0 rgba(0,0,0,.4)}
+
+    /* Drop zone */
+    #drop-zone{
+      width:100%;border:4px dashed #000;border-radius:16px;
+      padding:28px 20px;background:#FFF0F8;cursor:pointer;
+      transition:background .2s;display:flex;flex-direction:column;align-items:center;gap:10px;
+    }
+    #drop-zone:hover,#drop-zone.drag{background:#FFD6F0}
+    #drop-zone img{max-width:120px;max-height:120px;border-radius:8px;border:3px solid #000;box-shadow:3px 3px 0 #000;display:none}
+    #drop-label{font-size:13px;color:#888;font-family:Arial,sans-serif;font-weight:400}
+    #file-input{display:none}
+
+    button.main-btn{
+      padding:15px 44px;background:#4CD147;color:#000;
+      font-family:'Arial Black',sans-serif;font-size:17px;font-weight:900;
+      border:4px solid #000;border-radius:60px;cursor:pointer;
+      box-shadow:5px 5px 0 #000;text-transform:uppercase;
+      transition:transform .1s,box-shadow .1s;width:100%;
+    }
+    button.main-btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
+    button.main-btn:disabled{opacity:.4;pointer-events:none}
+
+    #progress-wrap{display:none;width:100%;flex-direction:column;gap:8px;align-items:center}
+    #progress-bar-bg{width:100%;height:22px;background:#eee;border:3px solid #000;border-radius:30px;overflow:hidden;box-shadow:3px 3px 0 #000}
+    #progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#FF4DB8,#42A8F5);transition:width .2s;border-radius:30px}
+    #progress-label{font-size:13px;color:#333;font-family:Arial,sans-serif;font-weight:700}
+
+    #result-wrap{display:none;background:#4CD147;border:4px solid #000;border-radius:16px;box-shadow:5px 5px 0 #000;padding:18px;width:100%;flex-direction:column;gap:12px;align-items:center}
+    #result-wrap p{font-size:13px;color:#000;font-family:Arial,sans-serif;line-height:1.6}
+    button.dl-btn{padding:12px 32px;background:#FFE000;color:#000;font-family:'Arial Black',sans-serif;font-size:15px;font-weight:900;border:3px solid #000;border-radius:40px;cursor:pointer;box-shadow:4px 4px 0 #000;text-transform:uppercase}
+
+    #err-msg{display:none;background:#FF1744;color:#fff;border:3px solid #000;border-radius:12px;box-shadow:3px 3px 0 #000;padding:12px 16px;font-size:13px;font-family:Arial,sans-serif;width:100%;line-height:1.5}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="title">🎨 Compiler PEC.jpg</div>
+  <p class="subtitle">Cet outil génère le fichier <strong>pec.mind</strong> nécessaire à la page AR.<br/>À faire une seule fois.</p>
+  <p class="subtitle" style="font-size:11px;margin-top:-8px">Alternative fiable : <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style="color:#42A8F5">outil officiel MindAR</a> → uploader PEC.jpg → renommer en pec.mind</p>
+
+  <div class="step">
+    <div class="step-num">Étape 1</div>
+    <p>Sélectionnez ou glissez votre image <strong>PEC.jpg</strong> ci-dessous.</p>
+  </div>
+
+  <div id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="ev(event)" ondrop="drop(event)">
+    <img id="preview-img" alt="Aperçu"/>
+    <span id="drop-label">📁 Cliquez ou glissez PEC.jpg ici</span>
+    <input type="file" id="file-input" accept="image/*" onchange="fileSelected(event)"/>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Étape 2</div>
+    <p>Cliquez sur <strong>Compiler</strong>. Le traitement prend 15–60 secondes selon votre appareil.</p>
+  </div>
+
+  <button class="main-btn" id="compile-btn" onclick="compile()" disabled>⚙️ Compiler</button>
+
+  <div id="progress-wrap">
+    <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+    <div id="progress-label">Compilation en cours…</div>
+  </div>
+
+  <div id="err-msg"></div>
+
+  <div id="result-wrap">
+    <p>✅ <strong>pec.mind</strong> généré avec succès !<br/>Téléchargez-le et placez-le dans le dossier <code>public/</code> du projet.</p>
+    <button class="dl-btn" id="dl-btn">⬇️ Télécharger pec.mind</button>
+    <p style="font-size:11px;color:#333">Ensuite : <code>git add public/pec.mind</code> → deploy sur Vercel.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">Étape 3</div>
+    <p>Placez <strong>pec.mind</strong> dans <code>public/</code>, déployez sur Vercel, et partagez <a href="/pec-ar.html" target="_blank" style="color:#FFE000">/pec-ar.html</a> 🚀</p>
+  </div>
+</div>
+
+<!-- MindAR image compiler (includes Compiler class) -->
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js"></script>
+<script>
+'use strict';
+
+let selectedFile = null;
+let compiledBuffer = null;
+
+function ev(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+
+function drop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+}
+
+function fileSelected(e) {
+  const f = e.target.files[0];
+  if (f) handleFile(f);
+}
+
+function handleFile(f) {
+  selectedFile = f;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = document.getElementById('preview-img');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('drop-label').textContent = f.name;
+    document.getElementById('compile-btn').disabled = false;
+  };
+  reader.readAsDataURL(f);
+}
+
+function findCompiler() {
+  // CDN mindar-image.prod.js sets window.MINDAR = { Compiler, Controller, … }
+  // (no .IMAGE namespace — that's added by our custom ar-bundle-entry.js)
+  const candidates = [
+    () => window.MINDAR?.Compiler,
+    () => window.MINDAR?.IMAGE?.Compiler,
+    () => window.MindAR?.Compiler,
+    () => window.mindar?.Compiler,
+  ];
+  for (const fn of candidates) {
+    try { const v = fn(); if (typeof v === 'function') return v; } catch(_) {}
+  }
+  return null;
+}
+
+async function compile() {
+  if (!selectedFile) return;
+
+  document.getElementById('compile-btn').disabled = true;
+  document.getElementById('err-msg').style.display = 'none';
+  document.getElementById('result-wrap').style.display = 'none';
+
+  const progWrap = document.getElementById('progress-wrap');
+  const progBar  = document.getElementById('progress-bar');
+  const progLbl  = document.getElementById('progress-label');
+  progWrap.style.display = 'flex';
+  progBar.style.width = '0%';
+  progLbl.textContent = 'Chargement de l\'image…';
+
+  try {
+    // Load image into HTMLImageElement
+    const imgEl = await loadImage(selectedFile);
+
+    // Detect Compiler from CDN bundle — mindar-image.prod.js exposes
+    // window.MINDAR = { Compiler, Controller, … } (no .IMAGE namespace)
+    const Compiler = findCompiler();
+    if (!Compiler) {
+      const debug = window.MINDAR ? JSON.stringify(Object.keys(window.MINDAR)) : 'undefined';
+      throw new Error(
+        'Compiler introuvable (window.MINDAR=' + debug + '). ' +
+        'Essayez l\'outil officiel : https://hiukim.github.io/mind-ar-js-doc/tools/compile'
+      );
+    }
+
+    progLbl.textContent = 'Compilation en cours (peut prendre jusqu\'à 60s)…';
+
+    const comp = new Compiler();
+    await comp.compileImageTargets([imgEl], (p) => {
+      const pct = Math.round(p * 100);
+      progBar.style.width = pct + '%';
+      progLbl.textContent = `Compilation… ${pct}%`;
+    });
+
+    compiledBuffer = await comp.exportData();
+    progBar.style.width = '100%';
+    progLbl.textContent = 'Terminé !';
+
+    // Setup download
+    const blob = new Blob([compiledBuffer]);
+    const dlUrl = URL.createObjectURL(blob);
+    document.getElementById('dl-btn').onclick = () => {
+      const a = document.createElement('a');
+      a.href = dlUrl;
+      a.download = 'pec.mind';
+      a.click();
+    };
+    document.getElementById('result-wrap').style.display = 'flex';
+
+  } catch(e) {
+    console.error(e);
+    const errEl = document.getElementById('err-msg');
+    errEl.textContent = '❌ Erreur : ' + (e.message || String(e));
+    errEl.style.display = 'block';
+    progWrap.style.display = 'none';
+    document.getElementById('compile-btn').disabled = false;
+  }
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload  = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Impossible de charger l\'image.')); };
+    img.src = url;
+  });
+}
+</script>
+</body>
+</html>

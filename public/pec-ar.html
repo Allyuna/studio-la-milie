@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>AR — Studio La Milie</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{width:100%;height:100%;overflow:hidden;background:#FF4DB8;font-family:'Arial Black',Impact,sans-serif;-webkit-tap-highlight-color:transparent}
+
+    /* ── AR container ─── */
+    #ar-container{position:fixed;inset:0;width:100%;height:100%}
+    #ar-container video{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:0}
+    #ar-container canvas{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;z-index:1}
+
+    /* ── Splash ─── */
+    #splash{
+      position:fixed;inset:0;z-index:500;
+      background:linear-gradient(160deg,#FF4DB8 0%,#D6009A 100%);
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+      gap:14px;padding:max(env(safe-area-inset-top),28px) 28px 28px;
+      overflow-y:auto;
+    }
+    .logo-wrap{
+      width:88px;height:88px;background:#fff;
+      border-radius:50%;border:5px solid #000;
+      box-shadow:5px 5px 0 #000;
+      overflow:hidden;display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;
+    }
+    .logo-wrap img{width:100%;height:100%;object-fit:contain}
+    .g-title{
+      font-size:clamp(26px,7vw,36px);font-weight:900;color:#fff;text-align:center;
+      text-shadow:-4px -4px 0 #000,4px -4px 0 #000,-4px 4px 0 #000,4px 4px 0 #000,
+                  -6px 0 0 #000,6px 0 0 #000,0 -6px 0 #000,0 6px 0 #000;
+      text-transform:uppercase;letter-spacing:2px;
+    }
+    .g-sub{
+      font-size:13px;font-weight:900;color:#FFE000;text-align:center;
+      text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;
+      text-transform:uppercase;letter-spacing:3px;
+    }
+    .g-bubble{
+      background:#42A8F5;border:4px solid #000;border-radius:18px;
+      box-shadow:5px 5px 0 #000;padding:12px 18px;
+      max-width:290px;width:100%;
+    }
+    .g-bubble p{
+      font-size:13px;font-weight:700;color:#fff;line-height:1.55;text-align:center;
+      text-shadow:-1px -1px 0 rgba(0,0,0,.5),1px -1px 0 rgba(0,0,0,.5),
+                  -1px 1px 0 rgba(0,0,0,.5),1px 1px 0 rgba(0,0,0,.5);
+    }
+    #start-btn{
+      padding:16px 52px;background:#4CD147;color:#000;
+      font-family:'Arial Black',sans-serif;font-size:18px;font-weight:900;
+      border:4px solid #000;border-radius:60px;cursor:pointer;
+      box-shadow:5px 5px 0 #000;text-transform:uppercase;letter-spacing:1px;
+      transition:transform .1s,box-shadow .1s;
+    }
+    #start-btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 #000}
+    #start-btn:disabled{opacity:.5;pointer-events:none}
+    .spinner{width:36px;height:36px;border:4px solid rgba(0,0,0,.15);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:none}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #status-line{font-size:12px;color:rgba(255,255,255,.75);min-height:18px;font-weight:700;text-align:center}
+    #status-line.err{color:#FF1744}
+
+    /* ── QR section ─── */
+    .qr-section{
+      background:#fff;border:4px solid #000;border-radius:16px;
+      box-shadow:5px 5px 0 #000;padding:14px;
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+      max-width:230px;width:100%;
+    }
+    .qr-label{font-size:10px;font-weight:900;color:#000;text-transform:uppercase;letter-spacing:2px;text-align:center}
+    #qrcode{width:140px;height:140px}
+    #qrcode canvas,#qrcode img{width:140px!important;height:140px!important}
+    #page-url{font-size:9px;color:#666;word-break:break-all;text-align:center;max-width:200px;font-family:monospace;font-weight:400}
+
+    /* ── HUD ─── */
+    #hud{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:space-between;pointer-events:none;padding:max(env(safe-area-inset-top),36px) 20px max(env(safe-area-inset-bottom),30px)}
+    #hud.on{display:flex}
+    .hud-top{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .h-tag{
+      background:#FF4DB8;border:3px solid #000;border-radius:20px;
+      box-shadow:3px 3px 0 #000;padding:5px 18px;
+      font-size:11px;font-weight:900;color:#fff;
+      text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000;
+      text-transform:uppercase;letter-spacing:2px;
+    }
+    #hint{
+      background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      border:2px solid rgba(255,255,255,.2);color:#fff;
+      font-size:13px;font-weight:700;padding:10px 18px;
+      border-radius:14px;text-align:center;max-width:250px;line-height:1.5;
+      transition:opacity .4s;font-family:'Arial Black',sans-serif;
+    }
+
+    /* ── Viewfinder ─── */
+    #vf{position:relative;width:200px;height:200px}
+    .co{position:absolute;width:38px;height:38px}
+    .tl{top:0;left:0;border-top:5px solid #FF4DB8;border-left:5px solid #FF4DB8;border-radius:4px 0 0 0}
+    .tr{top:0;right:0;border-top:5px solid #42A8F5;border-right:5px solid #42A8F5;border-radius:0 4px 0 0}
+    .bl{bottom:0;left:0;border-bottom:5px solid #42A8F5;border-left:5px solid #42A8F5;border-radius:0 0 0 4px}
+    .br{bottom:0;right:0;border-bottom:5px solid #FF4DB8;border-right:5px solid #FF4DB8;border-radius:0 0 4px 0}
+    #sl{position:absolute;left:6px;right:6px;height:3px;background:linear-gradient(90deg,transparent,#FF4DB8 40%,#42A8F5 60%,transparent);box-shadow:0 0 9px rgba(255,77,184,.9);animation:sweep 2s ease-in-out infinite}
+    @keyframes sweep{0%{top:0;opacity:1}85%{top:100%;opacity:.3}100%{top:100%;opacity:0}}
+    #dot{position:absolute;top:50%;left:50%;width:12px;height:12px;border-radius:50%;background:#FF4DB8;box-shadow:0 0 9px #FF4DB8;transform:translate(-50%,-50%);animation:pulse 1.8s ease-in-out infinite;transition:background .3s,box-shadow .3s}
+    #dot.locked{background:#4CD147;box-shadow:0 0 13px #4CD147;animation:none}
+    @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.6);opacity:1}}
+
+    .hud-bot{display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:all}
+    #found-btn{
+      display:none;padding:16px 46px;
+      background:#4CD147;color:#000;
+      font-family:'Arial Black',sans-serif;font-size:16px;font-weight:900;
+      border:4px solid #000;border-radius:60px;cursor:pointer;
+      box-shadow:5px 5px 0 #000;text-transform:uppercase;
+      animation:btnpulse 1.8s ease-in-out infinite;
+    }
+    @keyframes btnpulse{0%,100%{box-shadow:5px 5px 0 #000}50%{box-shadow:7px 7px 0 #000;transform:scale(1.04)}}
+    #manual-btn{font-size:11px;color:rgba(255,255,255,.6);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:'Arial Black',sans-serif;font-weight:700}
+
+    /* ── Error overlay ─── */
+    #err{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.93);flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:36px;text-align:center;color:#fff}
+    #err.on{display:flex}
+    #err h2{font-size:20px;font-weight:900;text-shadow:-2px -2px 0 #FF4DB8,2px -2px 0 #FF4DB8,-2px 2px 0 #FF4DB8,2px 2px 0 #FF4DB8}
+    #err p{font-size:13px;color:rgba(255,255,255,.65);max-width:280px;line-height:1.65;font-family:Arial,sans-serif;font-weight:400}
+    #err button{padding:12px 34px;background:#4CD147;border:3px solid #000;box-shadow:3px 3px 0 #000;border-radius:50px;color:#000;font-family:'Arial Black',sans-serif;font-size:14px;font-weight:900;cursor:pointer;text-transform:uppercase}
+    #err-manual{font-size:11px;color:rgba(255,255,255,.4);text-decoration:underline;cursor:pointer;margin-top:4px;font-family:Arial,sans-serif}
+  </style>
+</head>
+<body>
+
+<div id="ar-container"></div>
+
+<div id="hud">
+  <div class="hud-top">
+    <div class="h-tag">Studio La Milie</div>
+    <div id="hint">📷 Pointez vers l'image<br/><strong>Studio La Milie</strong></div>
+  </div>
+  <div id="vf">
+    <div class="co tl"></div><div class="co tr"></div>
+    <div class="co bl"></div><div class="co br"></div>
+    <div id="sl"></div>
+    <div id="dot"></div>
+  </div>
+  <div class="hud-bot">
+    <button id="found-btn" onclick="confirmCode()">✓ J'ai le code !</button>
+    <button id="manual-btn" onclick="manualFallback()">Impossible de scanner ?</button>
+  </div>
+</div>
+
+<div id="splash">
+  <div class="logo-wrap">
+    <img src="/logo.jpg" alt="Studio La Milie" onerror="this.style.display='none'" />
+  </div>
+  <div style="text-align:center">
+    <div class="g-title">Studio La Milie</div>
+    <div class="g-sub">✦ Color Escape ✦</div>
+  </div>
+  <div class="g-bubble">
+    <p>📷 Scannez l'image pour révéler le code secret en réalité augmentée 3D !</p>
+  </div>
+  <button id="start-btn" onclick="startAR()">🎨 Lancer l'AR</button>
+  <div class="spinner" id="spinner"></div>
+  <div id="status-line"></div>
+  <div class="qr-section">
+    <div class="qr-label">📲 Partager ce lien</div>
+    <div id="qrcode"></div>
+    <div id="page-url"></div>
+  </div>
+</div>
+
+<div id="err">
+  <h2 id="err-title">⚠️ Erreur</h2>
+  <p id="err-msg">Une erreur est survenue.</p>
+  <button onclick="location.reload()">Réessayer</button>
+  <div id="err-manual" onclick="manualFallback()">Entrer le code manuellement</div>
+</div>
+
+<!-- QR via qrserver API (no external lib needed) -->
+<script src="/mindar-bundle.js"></script>
+<script>
+'use strict';
+
+const SECRET_CODE = '3857';
+const TARGET_FILE = '/PEC.mind';
+
+/* ── QR Code ─────────────────────────────────────────── */
+(function initQR() {
+  const url = window.location.href;
+  const urlEl = document.getElementById('page-url');
+  const qrEl  = document.getElementById('qrcode');
+  if (urlEl) urlEl.textContent = url;
+  // Use Google Charts as reliable fallback
+  const img = document.createElement('img');
+  img.width  = 140;
+  img.height = 140;
+  img.style.cssText = 'width:140px;height:140px;display:block';
+  img.alt = 'QR Code';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=6&data=' + encodeURIComponent(url);
+  img.onerror = () => { if (urlEl) urlEl.style.fontSize = '11px'; };
+  qrEl.appendChild(img);
+})();
+
+/* ── Helpers ─────────────────────────────────────────── */
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status-line');
+  el.textContent = msg;
+  el.className = isErr ? 'err' : '';
+}
+function showError(title, msg) {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('err-title').textContent = title;
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('err').classList.add('on');
+}
+
+/* ── Graffiti card canvas ────────────────────────────── */
+function buildGraffitiCard(code) {
+  const S = 512;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+
+  // Pink background
+  ctx.fillStyle = '#FF4DB8';
+  ctx.fillRect(0, 0, S, S);
+
+  // Spray speckles
+  for (let i = 0; i < 350; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random()*S, Math.random()*S, 0.5+Math.random()*2.5, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,255,255,${0.04+Math.random()*0.1})`;
+    ctx.fill();
+  }
+
+  // Thick black border
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 22;
+  ctx.strokeRect(11, 11, S-22, S-22);
+
+  // Blue accent border
+  ctx.strokeStyle = '#42A8F5';
+  ctx.lineWidth = 7;
+  ctx.strokeRect(24, 24, S-48, S-48);
+
+  // Yellow corner dots
+  const corners = [[38,38],[S-38,38],[38,S-38],[S-38,S-38]];
+  const dotColors = ['#FFE000','#42A8F5','#4CD147','#FF7A1A'];
+  corners.forEach(([cx,cy],i) => {
+    ctx.beginPath(); ctx.arc(cx,cy,14,0,Math.PI*2);
+    ctx.fillStyle='#000'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,10,0,Math.PI*2);
+    ctx.fillStyle=dotColors[i]; ctx.fill();
+  });
+
+  // Helper: graffiti-style text with thick outline
+  function grafText(text, x, y, size, fill, outlineSize=9) {
+    ctx.font = `900 ${size}px "Arial Black",Arial,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Outline passes
+    ctx.fillStyle = '#000';
+    for (const [dx,dy] of [[-outlineSize,-outlineSize],[outlineSize,-outlineSize],[-outlineSize,outlineSize],[outlineSize,outlineSize],[-outlineSize*1.4,0],[outlineSize*1.4,0],[0,-outlineSize*1.4],[0,outlineSize*1.4]]) {
+      ctx.fillText(text, x+dx, y+dy);
+    }
+    // Main fill
+    ctx.fillStyle = fill;
+    ctx.fillText(text, x, y);
+    // Gloss highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.22)';
+    ctx.fillText(text, x-4, y-4);
+  }
+
+  grafText('CODE', S/2, 80, 68, '#FFE000', 7);
+  grafText(code, S/2, S/2+18, 185, '#fff', 11);
+  grafText('SECRET', S/2, S-82, 68, '#4CD147', 7);
+
+  return cv;
+}
+
+/* ── AR init ─────────────────────────────────────────── */
+let mindarThree = null;
+
+window.startAR = async function() {
+  const btn = document.getElementById('start-btn');
+  btn.disabled = true;
+  document.getElementById('spinner').style.display = 'block';
+  setStatus('Initialisation…');
+
+  if (!window.MINDAR || !window.MINDAR.IMAGE) {
+    showError('⚠️ Librairie AR manquante', 'La librairie AR n\'a pas pu se charger. Vérifiez votre connexion puis rechargez.');
+    return;
+  }
+
+  try {
+    mindarThree = new window.MINDAR.IMAGE.MindARThree({
+      container: document.getElementById('ar-container'),
+      imageTargetSrc: TARGET_FILE,
+      maxTrack: 1,
+      uiLoading: 'no',
+      uiScanning: 'no',
+      uiError: 'no',
+    });
+    const { renderer, scene, camera } = mindarThree;
+    renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = window.THREE.NoToneMapping;
+    scene.add(new window.THREE.AmbientLight(0xffffff, 2.0));
+
+    // Graffiti card (front face = canvas texture)
+    const tex = new window.THREE.CanvasTexture(buildGraffitiCard(SECRET_CODE));
+    tex.encoding = window.THREE.sRGBEncoding;
+
+    const card = new window.THREE.Mesh(
+      new window.THREE.BoxGeometry(0.55, 0.55, 0.028),
+      [
+        new window.THREE.MeshBasicMaterial({color:0xFF4DB8}),
+        new window.THREE.MeshBasicMaterial({color:0xFF4DB8}),
+        new window.THREE.MeshBasicMaterial({color:0xFF4DB8}),
+        new window.THREE.MeshBasicMaterial({color:0xFF4DB8}),
+        new window.THREE.MeshBasicMaterial({map:tex}),
+        new window.THREE.MeshBasicMaterial({color:0x000000}),
+      ]
+    );
+    card.position.set(0, 0.15, 0);
+    card.scale.set(0, 0, 0);
+
+    // Floating paint-blob particles
+    const blobColors = [0xFF4DB8, 0x42A8F5, 0x4CD147, 0xFFE000, 0xFF7A1A, 0xffffff];
+    const blobs = Array.from({length:22}, (_,i) => {
+      const r = 0.012 + Math.random()*0.018;
+      const m = new window.THREE.Mesh(
+        new window.THREE.SphereGeometry(r, 7, 7),
+        new window.THREE.MeshBasicMaterial({color: blobColors[i%6]})
+      );
+      m.visible = false;
+      m.userData = {
+        ph: (i/22)*Math.PI*2,
+        r:  0.28 + Math.random()*0.20,
+        sp: 0.38 + Math.random()*0.62,
+        yb: 0.15 + Math.random()*0.22,
+        ya: 0.018 + Math.random()*0.032,
+      };
+      return m;
+    });
+
+    const anchor = mindarThree.addAnchor(0);
+    anchor.group.add(card);
+    blobs.forEach(b => anchor.group.add(b));
+
+    let trackStart = null, btnShown = false;
+
+    anchor.onTargetFound = () => {
+      trackStart = Date.now();
+      document.getElementById('hint').innerHTML = '🎯 Tenez immobile…';
+      document.getElementById('dot').classList.add('locked');
+    };
+    anchor.onTargetLost = () => {
+      if (btnShown) return;
+      trackStart = null;
+      card.scale.set(0,0,0);
+      blobs.forEach(b => { b.visible = false; });
+      document.getElementById('hint').innerHTML = '📷 Pointez vers l\'image<br/><strong>Studio La Milie</strong>';
+      document.getElementById('dot').classList.remove('locked');
+    };
+
+    setStatus('Ouverture de la caméra…');
+    await mindarThree.start();
+
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('hud').classList.add('on');
+
+    renderer.setAnimationLoop(() => {
+      const t = Date.now();
+      if (trackStart !== null) {
+        const el = t - trackStart;
+        const prog = Math.min(1, el/700);
+        const s = 1 - Math.pow(1-prog, 3);
+        card.scale.set(s, s, s);
+        card.position.y = 0.15 + Math.sin(t*0.0017)*0.016;
+        card.rotation.y = Math.sin(t*0.0008)*0.11;
+        card.rotation.z = Math.sin(t*0.0011)*0.035;
+
+        if (el > 500) {
+          blobs.forEach(b => {
+            b.visible = true;
+            const u = b.userData;
+            const a = t*0.001*u.sp + u.ph;
+            b.position.x = Math.cos(a)*u.r;
+            b.position.z = Math.sin(a)*u.r;
+            b.position.y = u.yb + Math.sin(t*0.0022+u.ph)*u.ya;
+            b.scale.setScalar(0.65 + 0.35*Math.abs(Math.sin(t*0.0019+u.ph)));
+          });
+        }
+
+        if (el > 2500 && !btnShown) {
+          btnShown = true;
+          document.getElementById('found-btn').style.display = 'block';
+          document.getElementById('hint').style.opacity = '0';
+        }
+      }
+      renderer.render(scene, camera);
+    });
+
+  } catch(e) {
+    console.error('AR error:', e);
+    const msg = (e && e.message || '').toLowerCase();
+    if (msg.includes('permission') || msg.includes('denied') || msg.includes('notallowed')) {
+      showError('📷 Accès caméra refusé', 'Allez dans Réglages → Safari/Chrome → Caméra → Autoriser, puis rechargez.');
+    } else if (msg.includes('notfound') || msg.includes('devicenotfound')) {
+      showError('📷 Caméra introuvable', 'Aucune caméra détectée sur cet appareil.');
+    } else {
+      showError('⚠️ Erreur (' + ((e&&e.name)||'?') + ')', (e&&e.message)||String(e));
+    }
+  }
+};
+
+window.confirmCode = function() {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+  localStorage.setItem('ce_code_pec', SECRET_CODE);
+  localStorage.setItem('ce_code_pec_ts', Date.now().toString());
+  window.location.href = '/';
+};
+
+window.manualFallback = function() {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+  const v = prompt('Entrez le code que vous avez trouvé :');
+  if (v === null) { location.reload(); return; }
+  if (v.trim() === SECRET_CODE) {
+    localStorage.setItem('ce_code_pec', SECRET_CODE);
+    localStorage.setItem('ce_code_pec_ts', Date.now().toString());
+    window.location.href = '/';
+  } else {
+    alert('Code incorrect — cherchez encore ! 🔍');
+    location.reload();
+  }
+};
+
+window.addEventListener('beforeunload', () => {
+  if (mindarThree) try { mindarThree.stop(); } catch(_) {}
+});
+</script>
+</body>
+</html>
