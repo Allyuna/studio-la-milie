@@ -6,6 +6,9 @@ import JoinPage from './pages/JoinPage'
 import LobbyPage from './pages/LobbyPage'
 import AdminPage from './pages/AdminPage'
 import VocalGame from './pages/VocalGame'
+import TributeLanding from './pages/TributeLanding'
+import TributeGallery from './pages/TributeGallery'
+import TributeAdmin from './pages/TributeAdmin'
 import { GameProvider } from './context/GameContext'
 
 // ── i18n ──────────────────────────────────────────────────────────────────
@@ -82,6 +85,9 @@ function App() {
             <Route path="/lobby"       element={<LobbyPage />} />
             <Route path="/admin"       element={<AdminPage />} />
             <Route path="/game/vocal"  element={<VocalGame />} />
+            <Route path="/tribute"         element={<TributeLanding />} />
+            <Route path="/tribute/gallery" element={<TributeGallery />} />
+            <Route path="/tribute/admin"   element={<TributeAdmin />} />
           </Routes>
         </BrowserRouter>
       </GameProvider>

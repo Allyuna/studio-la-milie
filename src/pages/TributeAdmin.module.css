@@ -1,0 +1,292 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 60px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ── Login ── */
+.loginCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 32px;
+  margin-top: 80px;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.loginTitle {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.loginSub {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: -4px;
+}
+
+.loginForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.input {
+  width: 100%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  padding: 13px 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+.input:focus { border-color: var(--blue); }
+
+.loginBtn { width: 100%; }
+
+.error {
+  font-size: 13px;
+  color: #ff6b6b;
+}
+
+/* ── Admin header ── */
+.header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.stats {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.publishAllBtn {
+  padding: 10px 24px;
+  font-size: 14px;
+}
+
+.exportGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.exportBtn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.exportBtn:hover { border-color: var(--blue); color: var(--blue-light); }
+
+.exportPhotos { border-color: rgba(217,107,168,0.4); color: var(--pink-light); }
+.exportPhotos:hover { border-color: var(--pink); color: var(--pink-light); background: rgba(217,107,168,0.08); }
+.exportPhotos:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Tribute list ── */
+.list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card {
+  width: 100%;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.cardPublic {
+  border-left-color: var(--pink);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cardDate {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.cardPhoto {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.cardMessage {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+
+/* ── Toggle button ── */
+.toggleBtn {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  border-radius: var(--radius-xl);
+  border: 1px solid;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.toggleOn {
+  background: rgba(217, 107, 168, 0.15);
+  border-color: var(--pink);
+  color: var(--pink-light);
+}
+.toggleOn:hover {
+  background: rgba(217, 107, 168, 0.28);
+}
+
+.toggleOff {
+  background: var(--bg-glass);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.toggleOff:hover {
+  border-color: var(--blue);
+  color: var(--blue-light);
+}
+
+.toggleBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.deleteBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.deleteBtn:hover { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255,107,107,0.08); }
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.confirmLabel {
+  font-size: 12px;
+  color: #ff6b6b;
+  font-weight: 600;
+}
+.confirmYes {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,107,107,0.15);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  cursor: pointer;
+}
+.confirmYes:hover { background: rgba(255,107,107,0.3); }
+.confirmNo {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.confirmNo:hover { border-color: var(--blue); color: var(--blue-light); }
+
+/* ── Empty / spinner ── */
+.emptyCard {
+  padding: 40px 28px;
+  text-align: center;
+  width: 100%;
+}
+.emptyText { font-size: 15px; color: var(--text-muted); font-style: italic; }
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-top: 60px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
